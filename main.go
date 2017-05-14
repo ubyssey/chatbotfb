@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 
@@ -10,12 +11,11 @@ import (
 
 var cbMessenger = &messenger.Messenger{
 	AccessToken: os.Getenv("TOKEN"),
-	Debug:       cbMessenger.DebugAll,
 }
 
 func main() {
 	cbMessenger.MessageReceived = MessageReceived
-	http.HandlerFunc("/webhook", cbMessenger.Handler)
+	http.HandleFunc("/webhook", cbMessenger.Handler)
 	log.Fatal(http.ListenAndServe(":3001", nil))
 }
 
@@ -28,14 +28,14 @@ func MessageReceived(event messenger.Event, opts messenger.MessageOpts, msg mess
 	}
 
 	// send a simple message
-	resp, err := mess.SendSimpleMessage(
-		opts.Sender.ID, 
-		fmt.Sprintf("Hello, %s %s, %s", profile.FirstName, profile.LastName, msg.Text)
+	resp, err := cbMessenger.SendSimpleMessage(
+		opts.Sender.ID,
+		fmt.Sprintf("Hello, %s %s, %s", profile.FirstName, profile.LastName, msg.Text),
 	)
 
 	if err != nil {
 		fmt.Println(err)
 	}
-	
+
 	fmt.Printf("%+v", resp)
 }

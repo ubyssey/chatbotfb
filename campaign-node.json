@@ -1,0 +1,174 @@
+{
+    "publish_at": "2017-05-18T19:10:52-07:00",
+    "topics": [
+        "3d1797b5-9b2f-4af0-9af9-46710025ccc6"
+    ],
+    "name": "A nontrivial campaign",
+    "root_node": "1f9218e0-8aa3-49da-a876-3a2e8ece20cb",
+    "nodes": {
+        "1f9218e0-8aa3-49da-a876-3a2e8ece20cb": {
+            "effect": "message",
+            "content": {
+                "text": "Hello! I am Chatbot!"
+            },
+            "user_actions": [
+                {
+                    "type": "node",
+                    "target": "4722d250-6162-4f02-a358-a4d55e3c8e20",
+                    "label": "Nice to meet you!"
+                },
+                {
+                    "type": "link",
+                    "target": "https://www.nytimes.com/",
+                    "label": "I like NYT more than chatbots"
+                }
+            ]
+        },
+        "4722d250-6162-4f02-a358-a4d55e3c8e20": {
+            "effect": "message",
+            "content": {
+                "text": "It's nice to meet you too! Here's a picture of a crouton.",
+				"image": "https://crouton.net/crouton.png"
+            },
+			"user_actions": [
+				{
+					"type": "node",
+					"target": "09e00ca9-96df-4682-857e-a658858f96a1",
+					"label": "I like croutons"
+				},
+				{
+					"type": "link",
+					"target": "https://www.raspberrypi.org/",
+					"label": "I like pie"
+				}
+			]
+        },
+		"09e00ca9-96df-4682-857e-a658858f96a1": {
+			"effect": "message",
+			"content": {
+				"text": "I assume you like salad, too?"
+			},
+			"user_actions": [
+				{
+					"type": "node",
+					"target": "82ae7c07-4318-4ae8-b08c-222806476be7",
+					"label": "Yes"
+				},
+				{
+					"type": "node",
+					"target": "e1d522d9-3c32-48a6-80a7-d07f29dab26b",
+					"label": "No"
+				}
+			]
+		},
+		"82ae7c07-4318-4ae8-b08c-222806476be7": {
+			"effect": "message",
+			"content": {
+				"text": "Me too! What kind of dressing do you prefer?"
+			},
+			"user_actions": [
+				{
+					"type": "node",
+					"target": "d52a20b8-48c9-4f23-bb2c-d0a2cb51a745",
+					"label": "Bleu Cheese"
+				},
+				{
+					"type": "node",
+					"target": "17b675d7-97c8-4b92-bf59-d41705e4b8a7",
+					"label": "Balsalmic Vinaigrette"
+				},
+				{
+					"type": "node",
+					"target": "95a060e0-cce4-4b66-b551-7d0368bbd7df",
+					"label": "Ranch"
+				}
+			]
+		},
+		"d52a20b8-48c9-4f23-bb2c-d0a2cb51a745": {
+			"effect": "message",
+			"content": {
+				"text": "Ah yes, bleu. The most delicious kind of mold."
+			},
+			"user_actions": [
+				{
+					"type": "link",
+					"target": "https://en.wikipedia.org/wiki/Blue_cheese",
+					"label": "Mold? Prove it."
+				},
+				{
+					"type": "node",
+					"target": "95a060e0-cce4-4b66-b551-7d0368bbd7df",
+					"label": "Agreed!"
+				}
+			]
+		},
+		"95a060e0-cce4-4b66-b551-7d0368bbd7df": {
+			"effect": "message",
+			"content": {
+				"text": "Glad to speak to a fellow foodie!"
+			}
+		},
+		"17b675d7-97c8-4b92-bf59-d41705e4b8a7": {
+			"effect": "message",
+			"content": {
+				"text": "A safe choice."
+			},
+			"user_actions": [
+				{
+					"type": "node",
+					"target": "217792d5-a610-4d97-bb8a-9350116e1232",
+					"label": "Indeed, I value safety."
+				},
+				{
+					"type": "node",
+					"target": "1562894f-7f7f-4d6e-b416-c2e16b7d66fd",
+					"label": "I prefer extreme vinaigrettes"
+				}
+			]
+		},
+		"1562894f-7f7f-4d6e-b416-c2e16b7d66fd": {
+			"effect": "message",
+			"content": {
+				"text": "You fool, there's no such thing! This conversation is over."
+			}
+		},
+		"217792d5-a610-4d97-bb8a-9350116e1232": {
+			"effect": "message",
+			"content": {
+				"text": "It is indeed important."
+			},
+			"user_actions": [
+				{
+					"type": "node",
+					"target": "63caa04c-422a-448e-bc54-ee1484e1600c",
+					"label": "It is, in all areas."
+				},
+				{
+					"type": "node",
+					"target": "0e5ca699-bd73-41c4-8957-749d21c63050",
+					"label": "Sometimes I prefer to live dangerously"
+				}
+			]
+		},
+		"0e5ca699-bd73-41c4-8957-749d21c63050": {
+			"effect": "message",
+			"content": {
+				"text": "As do I--my validation can be curcumvented. Just don't tell any of my end users!"
+			}
+		},
+		"63caa04c-422a-448e-bc54-ee1484e1600c": {
+			"effect": "message",
+			"content": {
+				"text": "I expect you to live long and prosper.",
+				"image": "http://www.startrek.com/images/TNG.jpg"
+			}
+		},
+		"e1d522d9-3c32-48a6-80a7-d07f29dab26b": {
+			"effect": "message",
+			"content": {
+				"text": "Vegetables are overrated anyway--here's proof!",
+				"image": "https://www.christiancinema.com/catalog/images/4923_CeleryNightFeverDVD_lg.jpg"
+			}
+		}
+    }
+}

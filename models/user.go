@@ -9,20 +9,20 @@ import (
 )
 
 type User struct {
-	userID   string
-	lastSeen time.Time
+	userID   string    `json:"userID" bson:"_id,omitempty"`
+	lastSeen time.Time `json:"lastSeen" bson:"lastSeen"`
 	LastMessage
 }
 
 type LastMessage struct {
-	timestamp time.Time
+	timestamp time.Time `json:"timestamp" bson:"timestamp"`
 	Event
 }
 
 type Event struct {
-	nodeType string
-	target   string
-	label    string
+	nodeType string `json:"type" bson:"type"`
+	target   string `json:"target" bson:"target"`
+	label    string `json:"label" bson:"label"`
 }
 
 var (

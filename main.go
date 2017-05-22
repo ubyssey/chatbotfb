@@ -1,6 +1,7 @@
 package main
 
 import (
+	// Standard packages / libraries
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -8,28 +9,49 @@ import (
 	"os"
 	"strings"
 
+	// Internal packages
+	"models"
+
+	// External packages
 	"gopkg.in/maciekmm/messenger-platform-go-sdk.v4"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
-
-type campaignNode struct{}
 
 // TODO: Combine these vars into a group?
 var cbMessenger = &messenger.Messenger{
 	AccessToken: os.Getenv("TOKEN"),
 }
 
+var dbName = "chatbot"
+
 // Initialize mongoDB session
 var mongoSession, mongoSessionErr = mgo.Dial("<INSERT MONGO DB INSTANCE URL HERE>")
 
 func MessageReceived(event messenger.Event, opts messenger.MessageOpts, msg messenger.ReceivedMessage) {
+	// fetches the sender profile from facebook's Graph API
 	profile, err := cbMessenger.GetProfile(opts.Sender.ID)
 	// if the sender profile is invalid, print out error and return
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
+
+	// TODO: make the db stuff into a function. Ex. insertUser(db *mgo.Session ...)
+	// User collection (for MongoDB)
+	uc := session.DB(dbName).C("users")
+	user := User{}
+
+	err := uc.Find(bson.M{"userID": opts.Sender.ID}).One(&user)
+
+	if err != nil {
+		// existing user (user is found)
+	} else {
+		// new user
+
+	}
+
+	// Update the user activity timestamp
 
 	if toLower(msg) == "start" {
 		startTestCampaign()
@@ -63,9 +85,14 @@ func campaignHandler(rw http.ResponseWriter, req *http.Request) {
 	fmt.Fprintf(rw, "<h1>Campaign</h1>")
 }
 
+func genericErrorLogger() {
+	// TODO: find a method that logs the timestamp and the error or implement it yourself
+	return
+}
+
 // Test campaign
 func startTestCampaign() {
-	raw, err := ioutil.ReadFile("./camfpaign-node.json")
+	raw, err := ioutil.ReadFile("./campaign-node.json")
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)

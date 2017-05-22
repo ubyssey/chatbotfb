@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	// Internal packages
 	"./models"
@@ -18,15 +19,16 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-// TODO: Combine these vars into a group?
-var cbMessenger = &messenger.Messenger{
-	AccessToken: os.Getenv("TOKEN"),
-}
+var (
+	mongoSession    *mgo.Session
+	mongoSessionErr error
 
-var dbName = "chatbot"
-
-// Initialize mongoDB session
-var mongoSession, mongoSessionErr = mgo.Dial("<INSERT MONGO DB INSTANCE URL HERE>")
+	// Messenger SDK
+	cbMessenger = &messenger.Messenger{
+		AccessToken: os.Getenv("TOKEN"),
+	}
+	dbName = "ubysseycb"
+)
 
 func MessageReceived(event messenger.Event, opts messenger.MessageOpts, msg messenger.ReceivedMessage) {
 	// fetches the sender profile from facebook's Graph API
@@ -39,35 +41,38 @@ func MessageReceived(event messenger.Event, opts messenger.MessageOpts, msg mess
 	}
 
 	// TODO: make the db stuff into a function. Ex. insertUser(db *mgo.Session ...). Also store user data?
+	// TODO: make the bson fields more consistent
 	// User collection (for MongoDB)
 	uc := mongoSession.DB(dbName).C("users")
 	user := models.User{}
 
 	userCollectionError := uc.FindId(opts.Sender.ID).One(&user)
 
-	if userCollectionError != nil {
+	if userCollectionError == nil {
 		// existing user (user is found)
 		set := bson.M{
-			"lastSeen": opts.Timestamp,
-			"LastMessage": LastMessage{
-				"timestamp": ttime.Now().Format("20060102150405"),
-				"Event": Event{
-					"type":   "node",
-					"target": "4722d250-6162-4f02-a358-a4d55e3c8e20",
-					"label":  "Nice to meet you!",
+			"lastSeen": time.Unix(opts.Timestamp, 0),
+			"lastmessage": &models.LastMessage{
+				time.Now(),
+				models.Event{
+					"node",
+					"4722d250-6162-4f02-a358-a4d55e3c8e20",
+					"Nicasdfasdfasdfasde to meet you!",
 				},
 			},
 		}
 
 		uc.UpdateId(opts.Sender.ID, bson.M{"$set": set})
+
+		fmt.Printf("[LOG] Updated User %s", opts.Sender.ID)
 	} else {
 		// create new user
 		uc.Insert(
 			&models.User{
 				opts.Sender.ID,
-				opts.Timestamp,
+				time.Unix(opts.Timestamp, 0),
 				models.LastMessage{
-					time.Now().Format("20060102150405"),
+					time.Now(),
 					models.Event{
 						"node",
 						"4722d250-6162-4f02-a358-a4d55e3c8e20",
@@ -77,6 +82,7 @@ func MessageReceived(event messenger.Event, opts messenger.MessageOpts, msg mess
 			},
 		)
 
+		fmt.Printf("[LOG] Created User %s", opts.Sender.ID)
 	}
 
 	// Update the user activity timestamp
@@ -143,6 +149,14 @@ func genericErrorLogger() {
 }
 
 func main() {
+	// Initialize MongoDB session
+	mongoDBUrl := os.Getenv("MONGODBURL")
+	if mongoDBUrl == "" {
+		mongoDBUrl = "mongodb://127.0.0.1:27017"
+	}
+
+	mongoSession, mongoSessionErr = mgo.Dial(mongoDBUrl)
+
 	// panic if mongoDB session fails initialization
 	if mongoSessionErr != nil {
 		panic(mongoSessionErr)
@@ -161,6 +175,11 @@ func main() {
 	http.HandleFunc("/webhook", cbMessenger.Handler)
 	http.HandleFunc("/campaign", campaignHandler)
 
-	// TODO: Set it to Heroku's env PORT || 3001 when deplying to Heroku
-	log.Fatal(http.ListenAndServe(":3001", nil))
+	// Heroku has its own env PORT. If not available use 3001 (for local development)
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = ":3001"
+	}
+
+	log.Fatal(http.ListenAndServe(port, nil))
 }

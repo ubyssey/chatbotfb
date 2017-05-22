@@ -1,16 +1,15 @@
 package models
 
 import (
-	// "fmt"
-	// "gopkg.in/mgo.v2"
-	// "gopkg.in/mgo.v2/bson"
-	// "log"
 	"time"
 )
 
+// TODO: make the BSON fields consistent
 type User struct {
 	UserID   string    `json:"userID" bson:"_id,omitempty"`
 	LastSeen time.Time `json:"lastSeen" bson:"lastSeen"`
+	// TODO: Add a bson field for last message. It is currently
+	// "lastmessage" right now
 	LastMessage
 }
 
@@ -23,8 +22,4 @@ type Event struct {
 	NodeType string `json:"type" bson:"type"`
 	Target   string `json:"target" bson:"target"`
 	Label    string `json:"label" bson:"label"`
-}
-
-func test() {
-
 }

@@ -3,16 +3,16 @@ package main
 import (
 	// Standard packages / libraries
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"strings"
 
 	// Internal packages
-	"models"
+	"./models"
 
 	// External packages
+	"github.com/maciekmm/messenger-platform-go-sdk/template"
 	"gopkg.in/maciekmm/messenger-platform-go-sdk.v4"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
@@ -30,33 +30,84 @@ var mongoSession, mongoSessionErr = mgo.Dial("<INSERT MONGO DB INSTANCE URL HERE
 
 func MessageReceived(event messenger.Event, opts messenger.MessageOpts, msg messenger.ReceivedMessage) {
 	// fetches the sender profile from facebook's Graph API
-	profile, err := cbMessenger.GetProfile(opts.Sender.ID)
+
+	_, profileErr := cbMessenger.GetProfile(opts.Sender.ID)
 	// if the sender profile is invalid, print out error and return
-	if err != nil {
-		fmt.Println(err)
+	if profileErr != nil {
+		fmt.Println(profileErr)
 		return
 	}
 
-	// TODO: make the db stuff into a function. Ex. insertUser(db *mgo.Session ...)
+	// TODO: make the db stuff into a function. Ex. insertUser(db *mgo.Session ...). Also store user data?
 	// User collection (for MongoDB)
-	uc := session.DB(dbName).C("users")
-	user := User{}
+	uc := mongoSession.DB(dbName).C("users")
+	user := models.User{}
 
-	err := uc.Find(bson.M{"userID": opts.Sender.ID}).One(&user)
+	userCollectionError := uc.FindId(opts.Sender.ID).One(&user)
 
-	if err != nil {
+	if userCollectionError != nil {
 		// existing user (user is found)
+		set := bson.M{
+			"lastSeen": opts.Timestamp,
+			"LastMessage": LastMessage{
+				"timestamp": ttime.Now().Format("20060102150405"),
+				"Event": Event{
+					"type":   "node",
+					"target": "4722d250-6162-4f02-a358-a4d55e3c8e20",
+					"label":  "Nice to meet you!",
+				},
+			},
+		}
+
+		uc.UpdateId(opts.Sender.ID, bson.M{"$set": set})
 	} else {
-		// new user
+		// create new user
+		uc.Insert(
+			&models.User{
+				opts.Sender.ID,
+				opts.Timestamp,
+				models.LastMessage{
+					time.Now().Format("20060102150405"),
+					models.Event{
+						"node",
+						"4722d250-6162-4f02-a358-a4d55e3c8e20",
+						"Nice to meet you!",
+					},
+				},
+			},
+		)
 
 	}
 
 	// Update the user activity timestamp
 
-	if toLower(msg) == "start" {
-		startTestCampaign()
-		return
-	} else if len(msg) > 0 {
+	if strings.ToLower(msg.Text) == "start" {
+		mq := messenger.MessageQuery{}
+		mq.RecipientID(opts.Sender.ID)
+		mq.Template(template.GenericTemplate{
+			Title: "abc",
+			Buttons: []template.Button{
+				template.Button{
+					Type:    template.ButtonTypePostback,
+					Payload: "test",
+					Title:   "Nice to meet you!",
+				},
+				template.Button{
+					Type:    template.ButtonTypePostback,
+					Payload: "test",
+					Title:   "I like NYT more than chatbots",
+				},
+			},
+		})
+
+		resp, err := cbMessenger.SendMessage(mq)
+
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		fmt.Printf("%+v", resp)
+	} else if len(msg.Text) > 0 {
 		// chatbot only understands the message "start", any other message that is not a button or "start"
 		// is invalid
 		resp, err := cbMessenger.SendSimpleMessage(
@@ -87,16 +138,8 @@ func campaignHandler(rw http.ResponseWriter, req *http.Request) {
 
 func genericErrorLogger() {
 	// TODO: find a method that logs the timestamp and the error or implement it yourself
+	// Include stack traces maybe? See errgo package
 	return
-}
-
-// Test campaign
-func startTestCampaign() {
-	raw, err := ioutil.ReadFile("./campaign-node.json")
-	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
-	}
 }
 
 func main() {
@@ -104,7 +147,7 @@ func main() {
 	if mongoSessionErr != nil {
 		panic(mongoSessionErr)
 	}
-	defer mongoSession.close()
+	defer mongoSession.Close()
 
 	// TODO: remove the TOKEN variable in production. It doesn't matter if the token is seen
 	// since it is only a test cb page. This is also only used locally on your computer,

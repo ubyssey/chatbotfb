@@ -10,7 +10,7 @@ import (
 	"time"
 
 	// Internal packages
-	"./models"
+	"github.com/user/chatbotfb/models"
 
 	// External packages
 	"github.com/maciekmm/messenger-platform-go-sdk/template"

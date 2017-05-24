@@ -1,0 +1,9 @@
+{
+  "name": "Ubyssey Chatbot Integration API",
+  "description": "The chatbot integration API with facebook",
+  "keywords": [
+    "go",
+    "facebook"
+  ],
+  "repository": "https://github.com/ubyssey/chatbotfb"
+}

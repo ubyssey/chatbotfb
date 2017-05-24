@@ -26,6 +26,7 @@ var (
 	// Messenger SDK
 	cbMessenger = &messenger.Messenger{
 		AccessToken: os.Getenv("TOKEN"),
+		VerifyToken: os.Getenv("TOKEN"),
 	}
 	dbName = "ubysseycb"
 )
@@ -166,7 +167,7 @@ func main() {
 	// TODO: remove the TOKEN variable in production. It doesn't matter if the token is seen
 	// since it is only a test cb page. This is also only used locally on your computer,
 	// Heroku supports environment variables.
-	apiToken := "EAATZAxfQTVYQBAE08rAVR3NZBaPwe0FTDEbGZBLbIKx5LUf5Y5m2DiZAkg1ZBhxo0IKhGuLHMkMj3ZAXdOJygZBTK9KZCyGb8J87uxsxpFXZCrzZByLveD2cmHryuCxDNtv2ifVlM18J1QoktcHLDaJI59Vlvn120t613QrQ2Ae0GSnwZDZD"
+	apiToken := "EAATZAxfQTVYQBAD5RIvKCpLEK5BQ4TF7V2l6S4OYcWHZAxZAwQ1va2x5zGNZAgEke8ZC7Mik8CKOcwqPmSLZBrZB2PzBaXEeOvhvoxfHwjelZBMLZCGZCOvflQJ1cCSH2nPfdOVih79WoQK0F47I5BI6wetibxz0eTlsiWFv9gPbllZBgZDZD"
 	os.Setenv("TOKEN", apiToken)
 
 	cbMessenger.MessageReceived = MessageReceived
@@ -178,8 +179,8 @@ func main() {
 	// Heroku has its own env PORT. If not available use 3001 (for local development)
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = ":3001"
+		port = "3001"
 	}
 
-	log.Fatal(http.ListenAndServe(port, nil))
+	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

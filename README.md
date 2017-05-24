@@ -3,5 +3,5 @@
 Building Locally
 ```
 go build
-./chatbotfb.exe (if on windows)
+./chatbotfb 
 ```

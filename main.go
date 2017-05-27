@@ -65,7 +65,7 @@ func MessageReceived(event messenger.Event, opts messenger.MessageOpts, msg mess
 
 		uc.UpdateId(opts.Sender.ID, bson.M{"$set": set})
 
-		fmt.Printf("[LOG] Updated User %s", opts.Sender.ID)
+		PrintLogger("Updated User %s", opts.Sender.ID)
 	} else {
 		// create new user
 		uc.Insert(
@@ -83,7 +83,7 @@ func MessageReceived(event messenger.Event, opts messenger.MessageOpts, msg mess
 			},
 		)
 
-		fmt.Printf("[LOG] Created User %s", opts.Sender.ID)
+		PrintLogger("Created User %s", opts.Sender.ID)
 	}
 
 	// Update the user activity timestamp
@@ -143,10 +143,10 @@ func campaignHandler(rw http.ResponseWriter, req *http.Request) {
 	fmt.Fprintf(rw, "<h1>Campaign</h1>")
 }
 
-func genericErrorLogger() {
-	// TODO: find a method that logs the timestamp and the error or implement it yourself
+// Generic logging with time prefix
+func PrintLogger(format string, args ...interface{}) {
 	// Include stack traces maybe? See errgo package
-	return
+	fmt.Printf("[LOG] "+time.Now().Format("2017-05-27 00:00:00")+" "+format, args...)
 }
 
 func main() {

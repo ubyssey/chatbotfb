@@ -6,16 +6,14 @@ import (
 
 // TODO: make the BSON fields consistent
 type User struct {
-	UserID   string    `json:"userID" bson:"_id,omitempty"`
-	LastSeen time.Time `json:"lastSeen" bson:"lastSeen"`
-	// TODO: Add a bson field for last message. It is currently
-	// "lastmessage" right now
-	LastMessage
+	UserID      string    `json:"userID" bson:"_id,omitempty"`
+	LastSeen    time.Time `json:"lastSeen" bson:"lastSeen"`
+	LastMessage `json:"lastMessage" bson:"lastMessage"`
 }
 
 type LastMessage struct {
 	Timestamp time.Time `json:"timestamp" bson:"timestamp"`
-	Event
+	Event     `json:"event" bson:"event"`
 }
 
 type Event struct {

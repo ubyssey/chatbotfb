@@ -164,12 +164,6 @@ func main() {
 	}
 	defer mongoSession.Close()
 
-	// TODO: remove the TOKEN variable in production. It doesn't matter if the token is seen
-	// since it is only a test cb page. This is also only used locally on your computer,
-	// Heroku supports environment variables.
-	apiToken := "EAATZAxfQTVYQBAD5RIvKCpLEK5BQ4TF7V2l6S4OYcWHZAxZAwQ1va2x5zGNZAgEke8ZC7Mik8CKOcwqPmSLZBrZB2PzBaXEeOvhvoxfHwjelZBMLZCGZCOvflQJ1cCSH2nPfdOVih79WoQK0F47I5BI6wetibxz0eTlsiWFv9gPbllZBgZDZD"
-	os.Setenv("TOKEN", apiToken)
-
 	cbMessenger.MessageReceived = MessageReceived
 
 	// API endpoints

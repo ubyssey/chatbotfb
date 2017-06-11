@@ -1,0 +1,9 @@
+{
+	"Database": {
+		"MongoDB": {
+			"LocalPort": "3001",
+			"LocalURL": "mongodb://127.0.0.1:27017",
+			"Name": "ubysseycb"
+		}
+	}
+}

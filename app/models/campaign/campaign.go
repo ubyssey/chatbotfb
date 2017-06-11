@@ -1,4 +1,4 @@
-package models
+package campaign
 
 // import (
 // 	"encoding/json"

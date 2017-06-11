@@ -1,14 +1,15 @@
 package controllers
 
 import (
-	// External packages
+	"github.com/ubyssey/chatbotfb/configuration"
+
 	"github.com/maciekmm/messenger-platform-go-sdk/template"
 	"gopkg.in/maciekmm/messenger-platform-go-sdk.v4"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
 
-func MessageReceived(event messenger.Event, opts messenger.MessageOpts, msg messenger.ReceivedMessage) {
+func GetMessage(event messenger.Event, opts messenger.MessageOpts, msg messenger.ReceivedMessage) {
 	// fetches the sender profile from facebook's Graph API
 
 	_, profileErr := cbMessenger.GetProfile(opts.Sender.ID)
@@ -21,6 +22,8 @@ func MessageReceived(event messenger.Event, opts messenger.MessageOpts, msg mess
 	// TODO: make the db stuff into a function. Ex. insertUser(db *mgo.Session ...). Also store user data?
 	// TODO: make the bson fields more consistent
 	// User collection (for MongoDB)
+	dbName := configuration.Config.Database.MongoDB.Name
+
 	uc := mongoSession.DB(dbName).C("users")
 	user := models.User{}
 

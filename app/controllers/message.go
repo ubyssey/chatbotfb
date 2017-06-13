@@ -1,18 +1,29 @@
 package controllers
 
 import (
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/ubyssey/chatbotfb/app/database"
+	"github.com/ubyssey/chatbotfb/app/lib/chatbot"
+	"github.com/ubyssey/chatbotfb/app/models"
+	"github.com/ubyssey/chatbotfb/app/utils/printlogger"
 	"github.com/ubyssey/chatbotfb/configuration"
 
 	"github.com/maciekmm/messenger-platform-go-sdk/template"
 	"gopkg.in/maciekmm/messenger-platform-go-sdk.v4"
-	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
+
+func init() {
+	chatbot.CbMessenger.MessageReceived = GetMessage
+}
 
 func GetMessage(event messenger.Event, opts messenger.MessageOpts, msg messenger.ReceivedMessage) {
 	// fetches the sender profile from facebook's Graph API
 
-	_, profileErr := cbMessenger.GetProfile(opts.Sender.ID)
+	_, profileErr := chatbot.CbMessenger.GetProfile(opts.Sender.ID)
 	// if the sender profile is invalid, print out error and return
 	if profileErr != nil {
 		fmt.Println(profileErr)
@@ -24,7 +35,7 @@ func GetMessage(event messenger.Event, opts messenger.MessageOpts, msg messenger
 	// User collection (for MongoDB)
 	dbName := configuration.Config.Database.MongoDB.Name
 
-	uc := mongoSession.DB(dbName).C("users")
+	uc := database.MongoSession.DB(dbName).C("users")
 	user := models.User{}
 
 	userCollectionError := uc.FindId(opts.Sender.ID).One(&user)
@@ -45,7 +56,7 @@ func GetMessage(event messenger.Event, opts messenger.MessageOpts, msg messenger
 
 		uc.UpdateId(opts.Sender.ID, bson.M{"$set": set})
 
-		PrintLogger("Updated User %s", opts.Sender.ID)
+		printlogger.Log("Updated User %s", opts.Sender.ID)
 	} else {
 		// create new user
 		uc.Insert(
@@ -63,7 +74,7 @@ func GetMessage(event messenger.Event, opts messenger.MessageOpts, msg messenger
 			},
 		)
 
-		PrintLogger("Created User %s", opts.Sender.ID)
+		printlogger.Log("Created User %s", opts.Sender.ID)
 	}
 
 	// Update the user activity timestamp
@@ -87,7 +98,7 @@ func GetMessage(event messenger.Event, opts messenger.MessageOpts, msg messenger
 			},
 		})
 
-		resp, err := cbMessenger.SendMessage(mq)
+		resp, err := chatbot.CbMessenger.SendMessage(mq)
 
 		if err != nil {
 			fmt.Println(err)
@@ -97,7 +108,7 @@ func GetMessage(event messenger.Event, opts messenger.MessageOpts, msg messenger
 	} else if len(msg.Text) > 0 {
 		// chatbot only understands the message "start", any other message that is not a button or "start"
 		// is invalid
-		resp, err := cbMessenger.SendSimpleMessage(
+		resp, err := chatbot.CbMessenger.SendSimpleMessage(
 			opts.Sender.ID,
 			fmt.Sprintf("Sorry, I don't understand your message."),
 		)

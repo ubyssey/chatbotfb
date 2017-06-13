@@ -4,6 +4,11 @@
 	"GodepVersion": "v79",
 	"Deps": [
 		{
+			"ImportPath": "github.com/gorilla/mux",
+			"Comment": "v1.4.0-10-g18fca31",
+			"Rev": "18fca31550181693b3a834a15b74b564b3605876"
+		},
+		{
 			"ImportPath": "github.com/maciekmm/messenger-platform-go-sdk/template",
 			"Comment": "v4.5-9-g71a3a43",
 			"Rev": "71a3a43148e3c5a2d20ceb133aed0faefd92ed34"

@@ -2,13 +2,13 @@ package jsonparser
 
 import (
 	"encoding/json"
-	"error"
-	"string"
+	"fmt"
+	"os"
 )
 
 // Parse to JSON
-func (c *interface{}) Parse(b []byte) error {
-	return json.Unmarshal(b, &c)
+func Parse(data []byte, v interface{}) error {
+	return json.Unmarshal(data, v)
 }
 
 func ToJson(c interface{}) string {

@@ -1,7 +1,7 @@
 package configuration
 
 import (
-	"error"
+	"io/ioutil"
 	"os"
 
 	"github.com/ubyssey/chatbotfb/app/utils/jsonparser"
@@ -26,15 +26,13 @@ var Config = &Configuration{}
 
 func init() {
 	raw, err := ioutil.ReadFile("./config.json")
-
 	if err != nil {
 		printlogger.Log(err.Error())
 		os.Exit(1)
 	}
 
-	parseError := jsonparser.Parse(raw, Config)
-
+	parseError := jsonparser.Parse(raw, &Config)
 	if parseError != nil {
-		printLogger.Log(parseError.Error())
+		printlogger.Log(parseError.Error())
 	}
 }

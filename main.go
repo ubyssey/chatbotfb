@@ -3,6 +3,8 @@ package main
 import (
 	"os"
 
+	"github.com/ubyssey/chatbotfb/app/database"
+	"github.com/ubyssey/chatbotfb/app/server"
 	"github.com/ubyssey/chatbotfb/configuration"
 )
 

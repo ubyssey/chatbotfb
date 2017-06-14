@@ -10,8 +10,8 @@ import (
 func Routes() *mux.Router {
 	router := mux.NewRouter()
 
-	router.HandleFunc("/webhook", chatbot.CbMessenger.Handler)
-	router.HandleFunc("/campaign", controllers.GetCampaign)
+	router.HandleFunc("/webhook", chatbot.CbMessenger.Handler).Methods("POST")
+	router.HandleFunc("/campaign", controllers.GetCampaign).Methods("POST")
 
 	return router
 }

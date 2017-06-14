@@ -4,7 +4,6 @@ import (
 	"time"
 )
 
-// TODO: make the BSON fields consistent
 type User struct {
 	UserID      string    `json:"userID" bson:"_id,omitempty"`
 	LastSeen    time.Time `json:"lastSeen" bson:"lastSeen"`

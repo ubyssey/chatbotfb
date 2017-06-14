@@ -24,26 +24,29 @@ type CampaignNode struct {
 }
 
 type Campaign struct {
-	PublishAt string   `json:"publish_at"`
-	Topics    []string `json:"topics"`
-	Name      string   `json:"name"`
-	RootNode  string   `json:"root_node"`
-	Nodes     map[string]CampaignNode{}
+	PublishAt 	string   `json:"publish_at"`
+	Topics    	[]string `json:"topics"`
+	CampaignId	string  `json:"campaign_id"`
+	Name      	string   `json:"name"`
+	RootNode  	string   `json:"root_node"`
+	Nodes     	map[string]CampaignNode{}
 }
 
+// TODO: will need to remove this later once the campaign API can send encoded JSON 
 func init() {
-	raw, err := ioutil.ReadFile("./campaign-node.json")
+	raw, err := ioutil.ReadFile("../../../campaign-node.json")
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
 	}
 
-	var campaigns []Campaign
+	var campaign Campaign
 	json.Unmarshal(raw, &campaigns)
 
-	for _, c := range campaigns {
-		fmt.Println(toJson(c))
-	}
+	fmt.Println(toJson(campaign))
 
-	fmt.Println(toJson(campaigns))
+	// Encode the Campaign Struct to JSON
+	b := new(bytes.Buffer)
+	json.NewEncoder(b).Encode(campaign)
+	res, err := http.Post("/campaign", "application/json; charset=utf-8", b)
 }

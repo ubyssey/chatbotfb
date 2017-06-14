@@ -40,8 +40,11 @@ func GetMessage(event messenger.Event, opts messenger.MessageOpts, msg messenger
 
 	userCollectionError := uc.FindId(opts.Sender.ID).One(&user)
 
+	// Check whether a user exists or not. If they are a first time user, create a record in database
+	// otherwise update the record of that user
 	if userCollectionError == nil {
 		// existing user (user is found)
+
 		set := bson.M{
 			"lastSeen": time.Unix(opts.Timestamp, 0),
 			"lastmessage": &models.LastMessage{
@@ -59,6 +62,7 @@ func GetMessage(event messenger.Event, opts messenger.MessageOpts, msg messenger
 		printlogger.Log("Updated User %s", opts.Sender.ID)
 	} else {
 		// create new user
+
 		uc.Insert(
 			&models.User{
 				opts.Sender.ID,

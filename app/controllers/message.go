@@ -17,10 +17,11 @@ import (
 )
 
 func init() {
-	chatbot.CbMessenger.MessageReceived = GetMessage
+	chatbot.CbMessenger.MessageReceived = postMessage
 }
 
-func GetMessage(event messenger.Event, opts messenger.MessageOpts, msg messenger.ReceivedMessage) {
+// Handles the POST message request from facebook
+func postMessage(event messenger.Event, opts messenger.MessageOpts, msg messenger.ReceivedMessage) {
 	// fetches the sender profile from facebook's Graph API
 
 	_, profileErr := chatbot.CbMessenger.GetProfile(opts.Sender.ID)

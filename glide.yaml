@@ -1,0 +1,10 @@
+package: github.com/ubyssey/chatbotfb
+import:
+- package: github.com/gorilla/mux
+- package: github.com/maciekmm/messenger-platform-go-sdk
+  subpackages:
+  - template
+- package: gopkg.in/maciekmm/messenger-platform-go-sdk.v4
+- package: gopkg.in/mgo.v2
+  subpackages:
+  - bson

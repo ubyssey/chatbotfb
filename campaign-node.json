@@ -3,7 +3,8 @@
     "topics": [
         "3d1797b5-9b2f-4af0-9af9-46710025ccc6"
     ],
-    "campaign_id": "6z479nb9-3x2f-23gs-g2dz-abc10625xc68",
+    "uuid": "6z479nb9-3x2f-23gs-g2dz-abc10625xc68",
+    "version_uuid": "v1.0",
     "name": "A nontrivial campaign",
     "root_node": "1f9218e0-8aa3-49da-a876-3a2e8ece20cb",
     "nodes": {

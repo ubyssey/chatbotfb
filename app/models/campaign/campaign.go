@@ -26,7 +26,7 @@ type CampaignNode struct {
 type Campaign struct {
 	PublishAt 	string   `json:"publish_at"`
 	Topics    	[]string `json:"topics"`
-	CampaignId	string  `json:"campaign_id"`
+	Id 			string   `json:"uuid"`
 	Name      	string   `json:"name"`
 	RootNode  	string   `json:"root_node"`
 	Nodes     	map[string]CampaignNode{}

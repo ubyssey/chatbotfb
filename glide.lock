@@ -1,0 +1,21 @@
+hash: 81efcd8e4ec01e3557e457539118705a15f82115e0ec13e5e09c736a8cf62e32
+updated: 2017-06-16T22:42:13.360026-07:00
+imports:
+- name: github.com/gorilla/context
+  version: 08b5f424b9271eedf6f9f0ce86cb9396ed337a42
+- name: github.com/gorilla/mux
+  version: 18fca31550181693b3a834a15b74b564b3605876
+- name: github.com/maciekmm/messenger-platform-go-sdk
+  version: 71a3a43148e3c5a2d20ceb133aed0faefd92ed34
+  subpackages:
+  - template
+- name: gopkg.in/maciekmm/messenger-platform-go-sdk.v4
+  version: 0cb6e825b6fb086b37ffee383ed3057f3a706d0c
+- name: gopkg.in/mgo.v2
+  version: 3f83fa5005286a7fe593b055f0d7771a7dce4655
+  subpackages:
+  - bson
+  - internal/json
+  - internal/sasl
+  - internal/scram
+testImports: []

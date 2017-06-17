@@ -34,7 +34,7 @@ func GetCampaign(rw http.ResponseWriter, req *http.Request) {
 	campaignCollection := database.MongoSession.DB(dbName).C("campaigns")
 	userCollection := database.MongoSession.DB(dbName).C("users")
 
-	campaignCollectionError := campaignCollection.FindId(c.Name)
+	campaignCollectionError := campaignCollection.FindId(c.Id)
 
 	// Check whether or not the campaign exists or not. If it does not exist, add it to the
 	// database. If it does, then do nothing.

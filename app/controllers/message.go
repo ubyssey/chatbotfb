@@ -48,9 +48,9 @@ func postMessage(event messenger.Event, opts messenger.MessageOpts, msg messenge
 
 		set := bson.M{
 			"lastSeen": time.Unix(opts.Timestamp, 0),
-			"lastmessage": models.LastMessage{
+			"lastmessage": &models.LastMessage{
 				time.Now(),
-				models.Event{
+				&models.Event{
 					"node",
 					"4722d250-6162-4f02-a358-a4d55e3c8e20",
 					"Nicasdfasdfasdfasde to meet you!",
@@ -65,12 +65,12 @@ func postMessage(event messenger.Event, opts messenger.MessageOpts, msg messenge
 		// create new user
 
 		uc.Insert(
-			models.User{
+			&models.User{
 				opts.Sender.ID,
 				time.Unix(opts.Timestamp, 0),
-				models.LastMessage{
+				&models.LastMessage{
 					time.Now(),
-					models.Event{
+					&models.Event{
 						"node",
 						"4722d250-6162-4f02-a358-a4d55e3c8e20",
 						"Nice to meet you!",

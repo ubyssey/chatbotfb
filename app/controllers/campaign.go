@@ -9,6 +9,7 @@ import (
 	"github.com/ubyssey/chatbotfb/app/lib/chatbot"
 	"github.com/ubyssey/chatbotfb/app/models/campaign"
 	"github.com/ubyssey/chatbotfb/app/models/user"
+	"github.com/ubyssey/chatbotfb/app/server/payload"
 	"github.com/ubyssey/chatbotfb/configuration"
 
 	"github.com/maciekmm/messenger-platform-go-sdk/template"
@@ -43,14 +44,14 @@ func GetCampaignFromMgmtApi() {
 		// Campaign does not exist so insert a new campaign
 		campaignCollection.Insert(c)
 
-		u := user.User
+		u := user.User{}
 
 		// for every user, update their last message once a new campaign is sent over.
 		// TODO: find a way to use updateAll instead. Also refactor it later.
 		findUsers := userCollection.Find(bson.M{})
 		users := findUsers.Next(&u) {
 			set := bson.M{
-				"lastmessage": user.LastMessage{
+				"lastmessage": &user.LastMessage{
 					time.Now(),
 					user.Event{
 						c.Nodes[c.RootNode].UserActions[0].NodeType
@@ -61,21 +62,40 @@ func GetCampaignFromMgmtApi() {
 			}
 			userCollection.UpdateId(u.USERID, bson.M{"$set": set})
 
+			_, profileErr := chatbot.CbMessenger.GetProfile(u.USERID)
+			// if the sender profile is invalid, print out error and return
+			if profileErr != nil {
+				printlogger.Log(profileErr)
+				return
+
+			}
+
 			// send a campaign message to the user
-			// TODO: payload can only be a string. Make it a JSON string instead?
+			// TODO: payload can only be a string. Make it into a JSON string to keep track of campaign
+			// and target node.
 			mq := messenger.MessageQuery{}
 			mq.RecipientID(u.USERID)
+
+			// TODO: implement the payload options
+			firstPayloadOption := payload.Payload{
+
+			}
+
+			secondPayloadOption := payload.Payload{
+
+			}
+
 			mq.Template(template.GenericTemplate{
 				Title: c.Name,
 				Buttons: []template.Button{
 					template.Button{
 						Type:    template.ButtonTypePostback,
-						Payload: c.Nodes[c.RootNode].UserActions[0].Target,
+						Payload: jsonparser.ToJsonString(firstPayloadOption),
 						Title:   c.Nodes[c.RootNode].UserActions[0].Label,
 					},
 					template.Button{
 						Type:    template.ButtonTypePostback,
-						Payload: c.Nodes[c.RootNode].UserActions[1].Target,
+						Payload: jsonparser.ToJsonString(secondPayloadOption),
 						Title:   c.Nodes[c.RootNode].UserActions[1].Label,
 					},
 				},

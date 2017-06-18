@@ -6,12 +6,11 @@ import (
 	"os"
 )
 
-// Parse to JSON
 func Parse(data []byte, v interface{}) error {
 	return json.Unmarshal(data, v)
 }
 
-func ToJson(c interface{}) string {
+func ToJsonString(c interface{}) string {
 	bytes, err := json.Marshal(c)
 
 	if err != nil {

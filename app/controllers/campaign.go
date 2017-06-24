@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/ubyssey/chatbotfb/app/database"
@@ -24,7 +25,8 @@ import (
 // Sends a GET request to the mgmt API
 // TOOD: implement an actual HTTP request once the mgmt API endpoint is implemented
 func GetCampaignFromMgmtApi() {
-	raw, err := ioutil.ReadFile("/campaign-node.json")
+	testCampaignNodePath, _ := filepath.Abs("campaign-node.json")
+	raw, err := ioutil.ReadFile(testCampaignNodePath)
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)

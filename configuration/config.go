@@ -3,6 +3,7 @@ package configuration
 import (
 	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	"github.com/ubyssey/chatbotfb/app/utils/jsonparser"
 	"github.com/ubyssey/chatbotfb/app/utils/printlogger"
@@ -25,7 +26,8 @@ type MongoDB struct {
 var Config = &Configuration{}
 
 func init() {
-	raw, err := ioutil.ReadFile("./config.json")
+	configFilePath, _ := filepath.Abs("configuration/config.json")
+	raw, err := ioutil.ReadFile(configFilePath)
 	if err != nil {
 		printlogger.Log(err.Error())
 		os.Exit(1)

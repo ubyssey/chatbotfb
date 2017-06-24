@@ -21,14 +21,14 @@ import (
 // Sends a GET request to the mgmt API
 // TOOD: implement an actual HTTP request once the mgmt API endpoint is implemented
 func GetCampaignFromMgmtApi() {
-	raw, err := ioutil.ReadFile("../../../campaign-node.json")
+	raw, err := ioutil.ReadFile("/campaign-node.json")
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
 	}
 
-	var c campaign.Campaign
-	json.Unmarshal(raw, &campaign)
+	var newCampaign campaign.Campaign
+	json.Unmarshal(raw, &newCampaign)
 
 	// Get the database name from the config
 	dbName := configuration.Config.Database.MongoDB.Name
@@ -36,13 +36,13 @@ func GetCampaignFromMgmtApi() {
 	campaignCollection := database.MongoSession.DB(dbName).C("campaigns")
 	userCollection := database.MongoSession.DB(dbName).C("users")
 
-	campaignCollectionError := campaignCollection.FindId(c.UUID)
+	campaignCollectionError := campaignCollection.FindId(newCampaign.UUID)
 
 	// Check whether or not the campaign exists or not. If it does not exist, add it to the
 	// database. If it does, then do nothing.
 	if campaignCollectionError != nil {
 		// Campaign does not exist so insert a new campaign
-		campaignCollection.Insert(c)
+		campaignCollection.Insert(newCampaign)
 
 		u := user.User{}
 
@@ -54,9 +54,9 @@ func GetCampaignFromMgmtApi() {
 				"lastmessage": &user.LastMessage{
 					time.Now(),
 					user.Event{
-						c.Nodes[c.RootNode].UserActions[0].NodeType
-						c.Nodes[c.RootNode].UserActions[0].Target,
-						c.Nodes[c.RootNode].UserActions[0].Label,
+						newCampaign.Nodes[newCampaign.RootNode].UserActions[0].NodeType
+						newCampaign.Nodes[newCampaign.RootNode].UserActions[0].Target,
+						newCampaign.Nodes[newCampaign.RootNode].UserActions[0].Label,
 					},
 				},
 			}
@@ -70,33 +70,45 @@ func GetCampaignFromMgmtApi() {
 
 			}
 
-			// send a campaign message to the user
-			// TODO: payload can only be a string. Make it into a JSON string to keep track of campaign
-			// and target node.
+			// Assume for a new campaign, there is atleast a root node with two user actions
+
 			mq := messenger.MessageQuery{}
 			mq.RecipientID(u.USERID)
 
-			// TODO: implement the payload options
 			firstPayloadOption := payload.Payload{
-
+				CampaignId: newCampaign.UUID,
+				Event: &user.Event{
+					NodeType: newCampaign.Nodes[newCampaign.RootNode].UserActions[0].NodeType,
+					Target: newCampaign.Nodes[newCampaign.RootNode].UserActions[0].Target,
+					Label: newCampaign.Nodes[newCampaign.RootNode].UserActions[0].Label,
+				}
 			}
 
 			secondPayloadOption := payload.Payload{
-
+				CampaignId: newCampaign.UUID,
+				Event: &user.Event{
+					NodeType: newCampaign.Nodes[newCampaign.RootNode].UserActions[1].NodeType,
+					Target: newCampaign.Nodes[newCampaign.RootNode].UserActions[1].Target,
+					Label: newCampaign.Nodes[newCampaign.RootNode].UserActions[1].Label,
+				}
 			}
 
+			// TODO: handle errors
+			firstPayloadString, firstPayloadErr := jsonparser.ToJsonString(firstPayloadOption)
+			secondPayloadString, secondPayloadErr := jsonparser.ToJsonString(secondPayloadOption)
+
 			mq.Template(template.GenericTemplate{
-				Title: c.Name,
+				Title: newCampaign.Name,
 				Buttons: []template.Button{
 					template.Button{
 						Type:    template.ButtonTypePostback,
-						Payload: jsonparser.ToJsonString(firstPayloadOption),
-						Title:   c.Nodes[c.RootNode].UserActions[0].Label,
+						Payload: firstPayloadString,
+						Title:   newCampaign.Nodes[newCampaign.RootNode].UserActions[0].Label,
 					},
 					template.Button{
 						Type:    template.ButtonTypePostback,
-						Payload: jsonparser.ToJsonString(secondPayloadOption),
-						Title:   c.Nodes[c.RootNode].UserActions[1].Label,
+						Payload: secondPayloadString,
+						Title:   newCampaign.Nodes[newCampaign.RootNode].UserActions[1].Label,
 					},
 				},
 			})

@@ -34,52 +34,84 @@ func postPostback(event messenger.Event, opts messenger.MessageOpts, pb messenge
 	err := jsonparser.Parse(pb.Payload, postBackStruct)
 
 	if err != nil {
-		printlogger.Log("Error parsing the payload")
+		printlogger.Log("Error parsing the payload for user profile: %s", opts.Sender.ID)
 		return
 	}
 
-	campaignCollection := campaignCollection.FindId(postBackStruct.campaignId)
+	currentCampaign := campaignCollection.FindId(postBackStruct.CampaignId)
 
-	if campaignCollection != nil {
-		printLogger.Log("Error finding the campaign :%s", postBackStruct.campaignId)
+	if currentCampaign != nil {
+		printLogger.Log("Error finding the campaign :%s", postBackStruct.CampaignId)
 		return
 	}
 
-	if campaignNode, ok := campaignCollection[postBackStruct.campaignId] {
-		mq := messenger.MessageQuery{}
-		mq.RecipientID(opts.Sender.ID)
+	if campaignNode, ok := currentCampaign[postBackStruct.CampaignId] {
+		// If a node still has children, send a message with those children node options, 
+		// otherwise send the final message of the current campaign
+		if len(campaignNode.UserActions) > 0 {
+			mq := messenger.MessageQuery{}
+			mq.RecipientID(opts.Sender.ID)
 
-		// TODO: implement the payload options. Not every node has a payload / user action
-		firstPayloadOption := payload.Payload{
+			// Assume every node has two user actions
+			firstPayloadOption := payload.Payload{
+				CampaignId: postBackStruct.CampaignId,
+				Event: &user.Event{
+					NodeType: campaignNode.UserActions[0].NodeType,
+					Target: campaignNode.UserActions[0].Target,
+					Label: campaignNode.UserActions[0].Label,
+				}
+			}
 
-		}
+			secondPayloadOption := payload.Payload{
+				CampaignId: postBackStruct.CampaignId,
+				Event: &user.Event{
+					NodeType: campaignNode.UserActions[1].NodeType,
+					Target: campaignNode.UserActions[1].Target,
+					Label: campaignNode.UserActions[1].Label,
+				}
+			}
 
-		secondPayloadOption := payload.Payload{
+			// TODO: handle errors
+			firstPayloadString, firstPayloadErr := jsonparser.ToJsonString(firstPayloadOption)
+			secondPayloadString, secondPayloadErr := jsonparser.ToJsonString(secondPayloadOption)
 
-		}
 
-		mq.Template(template.GenericTemplate{
-			Title: c.Name,
-			Buttons: []template.Button{
-				template.Button{
-					Type:    template.ButtonTypePostback,
-					Payload: jsonparser.ToJsonString(firstPayloadOption),
-					Title:   c.Nodes[c.RootNode].UserActions[0].Label,
+			mq.Template(template.GenericTemplate{
+				Title: c.Name,
+				Buttons: []template.Button{
+					template.Button{
+						Type:    template.ButtonTypePostback,
+						Payload: jsonparser.ToJsonString(firstPayloadOption),
+						Title:   c.Nodes[c.RootNode].UserActions[0].Label,
+					},
+					template.Button{
+						Type:    template.ButtonTypePostback,
+						Payload: jsonparser.ToJsonString(secondPayloadOption),
+						Title:   c.Nodes[c.RootNode].UserActions[1].Label,
+					},
 				},
-				template.Button{
-					Type:    template.ButtonTypePostback,
-					Payload: jsonparser.ToJsonString(secondPayloadOption),
-					Title:   c.Nodes[c.RootNode].UserActions[1].Label,
-				},
-			},
-		})
+			})
 
-		resp, err := chatbot.CbMessenger.SendMessage(mq)
+			resp, err := chatbot.CbMessenger.SendMessage(mq)
 
-		if err != nil {
-			fmt.Println(err)
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			fmt.Printf("%+v", resp)
+		} else {
+			resp, err := chatbot.CbMessenger.SendSimpleMessage(
+				opts.Sender.ID,
+				fmt.Sprintf(campaignNode.Content.Text),
+			)
+
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			fmt.Printf("%+v", resp)
 		}
-
-		fmt.Printf("%+v", resp)
+	} else {
+		printlogger.Log("Campaign ID %s not found", postBackStruct.campaignId)
 	}
 }

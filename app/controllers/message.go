@@ -7,6 +7,7 @@ import (
 
 	"github.com/ubyssey/chatbotfb/app/database"
 	"github.com/ubyssey/chatbotfb/app/lib/chatbot"
+	"github.com/ubyssey/chatbotfb/app/models/campaign"
 	"github.com/ubyssey/chatbotfb/app/models/user"
 	"github.com/ubyssey/chatbotfb/app/utils/printlogger"
 	"github.com/ubyssey/chatbotfb/configuration"
@@ -16,34 +17,24 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+var (
+	dbName   string
+	uc       *mgo.Collection // User Collection
+	ucError  error           // User Collection error
+	senderID string
+)
+
 func init() {
 	chatbot.CbMessenger.MessageReceived = postMessage
+	dbName = configuration.Config.Database.MongoDB.Name
 }
 
-// Handles the POST message request from facebook
-func postMessage(event messenger.Event, opts messenger.MessageOpts, msg messenger.ReceivedMessage) {
-	// fetches the sender profile from facebook's Graph API
-
-	_, profileErr := chatbot.CbMessenger.GetProfile(opts.Sender.ID)
-	// if the sender profile is invalid, print out error and return
-	if profileErr != nil {
-		fmt.Println(profileErr)
-		return
-	}
-
-	// TODO: make the db stuff into a function. Ex. insertUser(db *mgo.Session ...). Also store user data?
-	// TODO: make the bson fields more consistent
-	// User collection (for MongoDB)
-	dbName := configuration.Config.Database.MongoDB.Name
-
-	uc := database.MongoSession.DB(dbName).C("users")
-	currUser := user.User{}
-
-	userCollectionError := uc.FindId(opts.Sender.ID).One(&currUser)
-
+// Creates a user record in MongoDB if non-existing user, otherwise
+// update the user record
+func createOrUpdateUser() {
 	// Check whether a user exists or not. If they are a first time user, create a record in database
 	// otherwise update the record of that user
-	if userCollectionError == nil {
+	if ucError == nil {
 		// existing user (user is found)
 
 		set := bson.M{
@@ -58,15 +49,15 @@ func postMessage(event messenger.Event, opts messenger.MessageOpts, msg messenge
 			},
 		}
 
-		uc.UpdateId(opts.Sender.ID, bson.M{"$set": set})
+		uc.UpdateId(senderID, bson.M{"$set": set})
 
-		printlogger.Log("Updated User %s", opts.Sender.ID)
+		printlogger.Log("Updated User %s", senderID)
 	} else {
 		// create new user
 
 		uc.Insert(
 			&user.User{
-				opts.Sender.ID,
+				senderID,
 				time.Unix(opts.Timestamp, 0),
 				user.LastMessage{
 					time.Now(),
@@ -79,26 +70,63 @@ func postMessage(event messenger.Event, opts messenger.MessageOpts, msg messenge
 			},
 		)
 
-		printlogger.Log("Created User %s", opts.Sender.ID)
+		printlogger.Log("Created User %s", senderID)
 	}
+}
 
-	// Update the user activity timestamp
+// Sends a reply back to the user depending on their message content
+func handleReplyMessage(msg messenger.ReceivedMessage) {
+	campaignCollection := database.MongoSession.DB(dbName).C("campaigns")
 
 	if strings.ToLower(msg.Text) == "start" {
+		startCampaign := campaign.Campaign{}
+		startCampaignErr := campaignCollection.FindId("6z479nb9-3x2f-23gs-g2dz-abc10625xc68").One(&startCampaign)
+
+		// Assume every starting campaign node has two user actions
+		firstPayloadOption := payload.Payload{
+			CampaignId: startCampaign.UUID,
+			Event: &user.Event{
+				NodeType: startCampaign.Nodes[startCampaign.RootNode].UserActions[0].NodeType,
+				Target:   startCampaign.Nodes[startCampaign.RootNode].UserActions[0].Target,
+				Label:    startCampaign.Nodes[startCampaign.RootNode].UserActions[0].Label,
+			},
+		}
+
+		secondPayloadOption := payload.Payload{
+			CampaignId: startCampaign.UUID,
+			Event: &user.Event{
+				NodeType: startCampaign.Nodes[startCampaign.RootNode].UserActions[1].NodeType,
+				Target:   startCampaign.Nodes[startCampaign.RootNode].UserActions[1].Target,
+				Label:    startCampaign.Nodes[startCampaign.RootNode].UserActions[1].Label,
+			},
+		}
+
+		firstPayloadString, firstPayloadErr := jsonparser.ToJsonString(firstPayloadOption)
+		secondPayloadString, secondPayloadErr := jsonparser.ToJsonString(secondPayloadOption)
+
+		// TODO: handle errors
+		if firstPayloadErr != nil {
+
+		}
+
+		if secondPayloadErr != nil {
+
+		}
+
 		mq := messenger.MessageQuery{}
-		mq.RecipientID(opts.Sender.ID)
+		mq.RecipientID(senderID)
 		mq.Template(template.GenericTemplate{
-			Title: "abc",
+			Title: startCampaign.Name,
 			Buttons: []template.Button{
 				template.Button{
 					Type:    template.ButtonTypePostback,
-					Payload: "test",
-					Title:   "Nice to meet you!",
+					Payload: firstPayloadString,
+					Title:   startCampaign.Nodes[startCampaign.RootNode].UserActions[0].Label,
 				},
 				template.Button{
 					Type:    template.ButtonTypePostback,
-					Payload: "test",
-					Title:   "I like NYT more than chatbots",
+					Payload: secondPayloadString,
+					Title:   startCampaign.Nodes[startCampaign.RootNode].UserActions[1].Label,
 				},
 			},
 		})
@@ -124,5 +152,26 @@ func postMessage(event messenger.Event, opts messenger.MessageOpts, msg messenge
 
 		fmt.Printf("%+v", resp)
 	}
+}
 
+// Handles the POST message request from facebook
+func postMessage(event messenger.Event, opts messenger.MessageOpts, msg messenger.ReceivedMessage) {
+	// fetches the sender profile from facebook's Graph API
+
+	_, profileErr := chatbot.CbMessenger.GetProfile(opts.Sender.ID)
+	// if the sender profile is invalid, print out error and return
+	if profileErr != nil {
+		fmt.Println(profileErr)
+		return
+	}
+
+	senderID = opts.Sender.ID
+
+	// User collection (for Mon
+	uc = database.MongoSession.DB(dbName).C("users")
+	currUser := user.User{}
+	ucError = uc.FindId(senderID).One(&currUser)
+
+	createOrUpdateUser()
+	handleReplyMessage(msg)
 }

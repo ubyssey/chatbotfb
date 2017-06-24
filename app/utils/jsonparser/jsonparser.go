@@ -2,8 +2,6 @@ package jsonparser
 
 import (
 	"encoding/json"
-	"fmt"
-	"os"
 )
 
 func Parse(data []byte, v interface{}) error {

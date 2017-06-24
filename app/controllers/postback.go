@@ -2,12 +2,17 @@ package controllers
 
 import (
 	"fmt"
-	
+
+	"github.com/ubyssey/chatbotfb/app/database"
 	"github.com/ubyssey/chatbotfb/app/lib/chatbot"
+	"github.com/ubyssey/chatbotfb/app/models/campaign"
+	"github.com/ubyssey/chatbotfb/app/models/user"
 	"github.com/ubyssey/chatbotfb/app/server/payload"
 	"github.com/ubyssey/chatbotfb/app/utils/jsonparser"
 	"github.com/ubyssey/chatbotfb/app/utils/printlogger"
+	"github.com/ubyssey/chatbotfb/configuration"
 
+	"github.com/maciekmm/messenger-platform-go-sdk/template"
 	"gopkg.in/maciekmm/messenger-platform-go-sdk.v4"
 )
 
@@ -19,7 +24,7 @@ func postPostback(event messenger.Event, opts messenger.MessageOpts, pb messenge
 	_, profileErr := chatbot.CbMessenger.GetProfile(opts.Sender.ID)
 	// if the sender profile is invalid, print out error and return
 	if profileErr != nil {
-		printlogger.Log(profileErr)
+		printlogger.Log(profileErr.Error())
 		return
 
 	}
@@ -28,25 +33,25 @@ func postPostback(event messenger.Event, opts messenger.MessageOpts, pb messenge
 	dbName := configuration.Config.Database.MongoDB.Name
 	// MongoDB campaign collection
 	campaignCollection := database.MongoSession.DB(dbName).C("campaigns")
-	userCollection := database.MongoSession.DB(dbName).C("users")
 
-	postBackStruct := postback.Postback{}
-	err := jsonparser.Parse(pb.Payload, postBackStruct)
+	payloadStruct := payload.Payload{}
+	err := jsonparser.Parse([]byte(pb.Payload), payloadStruct)
 
 	if err != nil {
 		printlogger.Log("Error parsing the payload for user profile: %s", opts.Sender.ID)
 		return
 	}
 
-	currentCampaign := campaignCollection.FindId(postBackStruct.CampaignId)
+	currentCampaign := campaign.Campaign{}
+	currentCampaignQuery := campaignCollection.FindId(payloadStruct.CampaignId).One(&currentCampaign)
 
-	if currentCampaign != nil {
-		printLogger.Log("Error finding the campaign :%s", postBackStruct.CampaignId)
+	if currentCampaignQuery != nil {
+		printlogger.Log("Error finding the campaign :%s", payloadStruct.CampaignId)
 		return
 	}
 
-	if campaignNode, ok := currentCampaign[postBackStruct.CampaignId] {
-		// If a node still has children, send a message with those children node options, 
+	if campaignNode, ok := currentCampaign.Nodes[payloadStruct.CampaignId]; ok {
+		// If a node still has children, send a message with those children node options,
 		// otherwise send the final message of the current campaign
 		if len(campaignNode.UserActions) > 0 {
 			mq := messenger.MessageQuery{}
@@ -54,40 +59,47 @@ func postPostback(event messenger.Event, opts messenger.MessageOpts, pb messenge
 
 			// Assume every node has two user actions
 			firstPayloadOption := payload.Payload{
-				CampaignId: postBackStruct.CampaignId,
+				CampaignId: payloadStruct.CampaignId,
 				Event: &user.Event{
 					NodeType: campaignNode.UserActions[0].NodeType,
-					Target: campaignNode.UserActions[0].Target,
-					Label: campaignNode.UserActions[0].Label,
-				}
+					Target:   campaignNode.UserActions[0].Target,
+					Label:    campaignNode.UserActions[0].Label,
+				},
 			}
 
 			secondPayloadOption := payload.Payload{
-				CampaignId: postBackStruct.CampaignId,
+				CampaignId: payloadStruct.CampaignId,
 				Event: &user.Event{
 					NodeType: campaignNode.UserActions[1].NodeType,
-					Target: campaignNode.UserActions[1].Target,
-					Label: campaignNode.UserActions[1].Label,
-				}
+					Target:   campaignNode.UserActions[1].Target,
+					Label:    campaignNode.UserActions[1].Label,
+				},
 			}
 
-			// TODO: handle errors
 			firstPayloadString, firstPayloadErr := jsonparser.ToJsonString(firstPayloadOption)
 			secondPayloadString, secondPayloadErr := jsonparser.ToJsonString(secondPayloadOption)
 
+			// TODO: handle errors
+			if firstPayloadErr != nil {
+
+			}
+
+			if secondPayloadErr != nil {
+
+			}
 
 			mq.Template(template.GenericTemplate{
-				Title: c.Name,
+				Title: currentCampaign.Name,
 				Buttons: []template.Button{
 					template.Button{
 						Type:    template.ButtonTypePostback,
-						Payload: jsonparser.ToJsonString(firstPayloadOption),
-						Title:   c.Nodes[c.RootNode].UserActions[0].Label,
+						Payload: firstPayloadString,
+						Title:   currentCampaign.Nodes[currentCampaign.RootNode].UserActions[0].Label,
 					},
 					template.Button{
 						Type:    template.ButtonTypePostback,
-						Payload: jsonparser.ToJsonString(secondPayloadOption),
-						Title:   c.Nodes[c.RootNode].UserActions[1].Label,
+						Payload: secondPayloadString,
+						Title:   currentCampaign.Nodes[currentCampaign.RootNode].UserActions[1].Label,
 					},
 				},
 			})
@@ -112,6 +124,6 @@ func postPostback(event messenger.Event, opts messenger.MessageOpts, pb messenge
 			fmt.Printf("%+v", resp)
 		}
 	} else {
-		printlogger.Log("Campaign ID %s not found", postBackStruct.campaignId)
+		printlogger.Log("Campaign ID %s not found", payloadStruct.CampaignId)
 	}
 }

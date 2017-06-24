@@ -8,5 +8,8 @@ import (
 // Generic logging with time prefix
 func Log(format string, args ...interface{}) {
 	// Include stack traces maybe? See errgo package
-	fmt.Printf("[LOG] "+time.Now().Format("2017-05-27 00:00:00")+" "+format, args...)
+	fmt.Printf(
+		"[LOG] "+time.Now().Format("2017-05-27 00:00:00")+" "+format+"\n",
+		args...,
+	)
 }

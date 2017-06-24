@@ -9,11 +9,14 @@ import (
 	"github.com/ubyssey/chatbotfb/app/lib/chatbot"
 	"github.com/ubyssey/chatbotfb/app/models/campaign"
 	"github.com/ubyssey/chatbotfb/app/models/user"
+	"github.com/ubyssey/chatbotfb/app/server/payload"
+	"github.com/ubyssey/chatbotfb/app/utils/jsonparser"
 	"github.com/ubyssey/chatbotfb/app/utils/printlogger"
 	"github.com/ubyssey/chatbotfb/configuration"
 
 	"github.com/maciekmm/messenger-platform-go-sdk/template"
 	"gopkg.in/maciekmm/messenger-platform-go-sdk.v4"
+	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -24,14 +27,9 @@ var (
 	senderID string
 )
 
-func init() {
-	chatbot.CbMessenger.MessageReceived = postMessage
-	dbName = configuration.Config.Database.MongoDB.Name
-}
-
 // Creates a user record in MongoDB if non-existing user, otherwise
 // update the user record
-func createOrUpdateUser() {
+func createOrUpdateUser(opts messenger.MessageOpts) {
 	// Check whether a user exists or not. If they are a first time user, create a record in database
 	// otherwise update the record of that user
 	if ucError == nil {
@@ -75,12 +73,17 @@ func createOrUpdateUser() {
 }
 
 // Sends a reply back to the user depending on their message content
-func handleReplyMessage(msg messenger.ReceivedMessage) {
+func handleReplyMessage(opts messenger.MessageOpts, msg messenger.ReceivedMessage) {
 	campaignCollection := database.MongoSession.DB(dbName).C("campaigns")
 
 	if strings.ToLower(msg.Text) == "start" {
 		startCampaign := campaign.Campaign{}
 		startCampaignErr := campaignCollection.FindId("6z479nb9-3x2f-23gs-g2dz-abc10625xc68").One(&startCampaign)
+
+		// TODO: handle err
+		if startCampaignErr != nil {
+
+		}
 
 		// Assume every starting campaign node has two user actions
 		firstPayloadOption := payload.Payload{
@@ -155,9 +158,10 @@ func handleReplyMessage(msg messenger.ReceivedMessage) {
 }
 
 // Handles the POST message request from facebook
-func postMessage(event messenger.Event, opts messenger.MessageOpts, msg messenger.ReceivedMessage) {
-	// fetches the sender profile from facebook's Graph API
+func MessageReceived(event messenger.Event, opts messenger.MessageOpts, msg messenger.ReceivedMessage) {
+	printlogger.Log("Received message from %s", opts.Sender.ID)
 
+	// fetches the sender profile from facebook's Graph API
 	_, profileErr := chatbot.CbMessenger.GetProfile(opts.Sender.ID)
 	// if the sender profile is invalid, print out error and return
 	if profileErr != nil {
@@ -166,12 +170,13 @@ func postMessage(event messenger.Event, opts messenger.MessageOpts, msg messenge
 	}
 
 	senderID = opts.Sender.ID
+	dbName = configuration.Config.Database.MongoDB.Name
 
 	// User collection (for Mon
 	uc = database.MongoSession.DB(dbName).C("users")
 	currUser := user.User{}
 	ucError = uc.FindId(senderID).One(&currUser)
 
-	createOrUpdateUser()
-	handleReplyMessage(msg)
+	createOrUpdateUser(opts)
+	handleReplyMessage(opts, msg)
 }

@@ -16,6 +16,7 @@ func main() {
 
 	// Connect to MongoDB
 	database.Connect(mongoDBUrl)
+	defer database.Disconnect()
 
 	// Run HTTP Server
 	server.Run()

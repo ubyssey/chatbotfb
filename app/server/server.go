@@ -16,6 +16,9 @@ func Run() {
 	chatbot.CbMessenger.MessageReceived = controllers.MessageReceived
 	http.Handle("/", routes.Routes())
 
+	// Testing a "would-be" push notification from mgmt-api
+	controllers.GetCampaignFromMgmtApi()
+
 	// Heroku has its own env PORT. If not available use 3001 (for local development)
 	port := os.Getenv("PORT")
 

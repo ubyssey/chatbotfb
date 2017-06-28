@@ -32,9 +32,9 @@ var (
 func createOrUpdateUser(opts messenger.MessageOpts) {
 	// Check whether a user exists or not. If they are a first time user, create a record in database
 	// otherwise update the record of that user
+	// TODO: figure out when lastMessage is updated since there are two user actions
 	if ucError == nil {
 		// existing user (user is found)
-
 		set := bson.M{
 			"lastSeen": time.Unix(opts.Timestamp, 0),
 			"lastMessage": &user.LastMessage{
@@ -52,7 +52,6 @@ func createOrUpdateUser(opts messenger.MessageOpts) {
 		printlogger.Log("Updated User %s", senderID)
 	} else {
 		// create new user
-
 		uc.Insert(
 			&user.User{
 				senderID,
@@ -77,12 +76,19 @@ func handleReplyMessage(opts messenger.MessageOpts, msg messenger.ReceivedMessag
 	campaignCollection := database.MongoSession.DB(dbName).C("campaigns")
 
 	if strings.ToLower(msg.Text) == "start" {
+		// A new starting campaign for the user
 		startCampaign := campaign.Campaign{}
-		startCampaignErr := campaignCollection.FindId("6z479nb9-3x2f-23gs-g2dz-abc10625xc68").One(&startCampaign)
+		startCampaignMissingErr := campaignCollection.FindId("6z479nb9-3x2f-23gs-g2dz-abc10625xc68").One(&startCampaign)
 
 		// TODO: handle err
-		if startCampaignErr != nil {
+		if startCampaignMissingErr != nil {
+			startCampaignErrResponse, _ := chatbot.CbMessenger.SendSimpleMessage(
+				opts.Sender.ID,
+				fmt.Sprintf("A start campaign was not found."),
+			)
 
+			printlogger.Log("%+v", startCampaignErrResponse)
+			return
 		}
 
 		// Assume every starting campaign node has two user actions
@@ -116,8 +122,10 @@ func handleReplyMessage(opts messenger.MessageOpts, msg messenger.ReceivedMessag
 
 		}
 
+		// Initialize a message query
 		mq := messenger.MessageQuery{}
 		mq.RecipientID(senderID)
+
 		mq.Template(template.GenericTemplate{
 			Title: startCampaign.Name,
 			Buttons: []template.Button{

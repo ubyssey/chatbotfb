@@ -16,11 +16,7 @@ import (
 	"gopkg.in/maciekmm/messenger-platform-go-sdk.v4"
 )
 
-func init() {
-	chatbot.CbMessenger.Postback = postPostback
-}
-
-func postPostback(event messenger.Event, opts messenger.MessageOpts, pb messenger.Postback) {
+func Postback(event messenger.Event, opts messenger.MessageOpts, pb messenger.Postback) {
 	_, profileErr := chatbot.CbMessenger.GetProfile(opts.Sender.ID)
 	// if the sender profile is invalid, print out error and return
 	if profileErr != nil {
@@ -81,11 +77,13 @@ func postPostback(event messenger.Event, opts messenger.MessageOpts, pb messenge
 
 			// TODO: handle errors
 			if firstPayloadErr != nil {
-
+				printlogger.Log("%s", firstPayloadErr.Error())
+				return
 			}
 
 			if secondPayloadErr != nil {
-
+				printlogger.Log("%s", secondPayloadErr.Error())
+				return
 			}
 
 			mq.Template(template.GenericTemplate{

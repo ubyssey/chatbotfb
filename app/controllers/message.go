@@ -115,12 +115,17 @@ func handleReplyMessage(opts messenger.MessageOpts, msg messenger.ReceivedMessag
 
 		// TODO: handle errors
 		if firstPayloadErr != nil {
-
+			printlogger.Log("%s", firstPayloadErr.Error())
+			return
 		}
 
 		if secondPayloadErr != nil {
-
+			printlogger.Log("%s", secondPayloadErr.Error())
+			return
 		}
+
+		printlogger.Log("%s", firstPayloadString)
+		printlogger.Log("%s", secondPayloadString)
 
 		// Initialize a message query
 		mq := messenger.MessageQuery{}

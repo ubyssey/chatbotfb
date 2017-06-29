@@ -15,6 +15,7 @@ import (
 func Run() {
 	chatbot.CbMessenger.MessageReceived = controllers.MessageReceived
 	chatbot.CbMessenger.Postback = controllers.Postback
+
 	http.Handle("/", routes.Routes())
 
 	// Testing a "would-be" push notification from mgmt-api

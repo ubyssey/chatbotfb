@@ -30,11 +30,14 @@ func Postback(event messenger.Event, opts messenger.MessageOpts, pb messenger.Po
 	// MongoDB campaign collection
 	campaignCollection := database.MongoSession.DB(dbName).C("campaigns")
 
+	printlogger.Log("Received payload '%s' from user %s", pb.Payload, opts.Sender.ID)
+
 	payloadStruct := payload.Payload{}
-	err := jsonparser.Parse([]byte(pb.Payload), payloadStruct)
+	err := jsonparser.Parse([]byte(pb.Payload), &payloadStruct)
 
 	if err != nil {
-		printlogger.Log("Error parsing the payload for user profile: %s", opts.Sender.ID)
+		printlogger.Log(err.Error())
+		printlogger.Log("Error parsing the payload '%s' for user profile: %s", pb.Payload, opts.Sender.ID)
 		return
 	}
 
@@ -46,7 +49,7 @@ func Postback(event messenger.Event, opts messenger.MessageOpts, pb messenger.Po
 		return
 	}
 
-	if campaignNode, ok := currentCampaign.Nodes[payloadStruct.CampaignId]; ok {
+	if campaignNode, ok := currentCampaign.Nodes[payloadStruct.Event.Target]; ok {
 		// If a node still has children, send a message with those children node options,
 		// otherwise send the final message of the current campaign
 		if len(campaignNode.UserActions) > 0 {
@@ -86,18 +89,19 @@ func Postback(event messenger.Event, opts messenger.MessageOpts, pb messenger.Po
 				return
 			}
 
+			// TODO: add a template for non-buttons (links, images, attachments)
 			mq.Template(template.GenericTemplate{
 				Title: currentCampaign.Name,
 				Buttons: []template.Button{
 					template.Button{
 						Type:    template.ButtonTypePostback,
 						Payload: firstPayloadString,
-						Title:   currentCampaign.Nodes[currentCampaign.RootNode].UserActions[0].Label,
+						Title:   campaignNode.UserActions[0].Label,
 					},
 					template.Button{
 						Type:    template.ButtonTypePostback,
 						Payload: secondPayloadString,
-						Title:   currentCampaign.Nodes[currentCampaign.RootNode].UserActions[1].Label,
+						Title:   campaignNode.UserActions[1].Label,
 					},
 				},
 			})
@@ -122,6 +126,6 @@ func Postback(event messenger.Event, opts messenger.MessageOpts, pb messenger.Po
 			fmt.Printf("%+v", resp)
 		}
 	} else {
-		printlogger.Log("Campaign ID %s not found", payloadStruct.CampaignId)
+		printlogger.Log("Campaign Node target %s not found for user %s", payloadStruct.Event.Target, opts.Sender.ID)
 	}
 }

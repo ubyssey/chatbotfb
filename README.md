@@ -2,6 +2,10 @@
 
 Building Locally
 ```
+go get github.com/Masterminds/glide (dev version, if you don't already have glide)
+glide update
+glide install
+
 go build
 ./chatbotfb 
 ```

@@ -95,7 +95,10 @@ func Postback(event messenger.Event, opts messenger.MessageOpts, pb messenger.Po
 					}
 				}
 
-				buttonsSlice = append(buttonsSlice, button)
+				// If the button struct is not empty, append it to the buttonSlice
+				if button.ButtonType != "" && button.Title != "" {
+					buttonsSlice = append(buttonsSlice, button)
+				}
 			}
 
 			// Generic Message Query template to be sent to the user

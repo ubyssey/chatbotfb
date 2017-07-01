@@ -56,55 +56,55 @@ func Postback(event messenger.Event, opts messenger.MessageOpts, pb messenger.Po
 			mq := messenger.MessageQuery{}
 			mq.RecipientID(opts.Sender.ID)
 
-			// Assume every node has two user actions
-			firstPayloadOption := payload.Payload{
-				CampaignId: payloadStruct.CampaignId,
-				Event: &user.Event{
-					NodeType: campaignNode.UserActions[0].NodeType,
-					Target:   campaignNode.UserActions[0].Target,
-					Label:    campaignNode.UserActions[0].Label,
-				},
-			}
+			// A button slice to hold each button option to be shown to the user
+			buttonsSlice := []template.Button{}
+			var button template.Button
 
-			secondPayloadOption := payload.Payload{
-				CampaignId: payloadStruct.CampaignId,
-				Event: &user.Event{
-					NodeType: campaignNode.UserActions[1].NodeType,
-					Target:   campaignNode.UserActions[1].Target,
-					Label:    campaignNode.UserActions[1].Label,
-				},
-			}
+			for _, currUserAction := range campaignNode.UserActions {
+				// Reset the button struct every loop
+				button = template.Button{}
 
-			firstPayloadString, firstPayloadErr := jsonparser.ToJsonString(firstPayloadOption)
-			secondPayloadString, secondPayloadErr := jsonparser.ToJsonString(secondPayloadOption)
+				// If the node type is a "link", create a NewWebURLButton template. Otherwise,
+				// if it is a "node", then create a postback Button template with its payload
+				if currUserAction.NodeType == "link" {
+					button = template.NewWebURLButton(
+						currUserAction.Label,
+						currUserAction.Target
+					)
+				} else if currUserAction.NodeType == "node" {
+					payloadOption := payload.Payload{
+						CampaignId: payloadStruct.CampaignId,
+						Event: &user.Event{
+							NodeType: currUserAction.NodeType,
+							Target:   currUserAction.Target,
+							Label:    currUserAction.Label,
+						},
+					}
 
-			// TODO: handle errors
-			if firstPayloadErr != nil {
-				printlogger.Log("%s", firstPayloadErr.Error())
-				return
-			}
+					payloadOptionString, payloadOptionParsingErr := jsonparser.ToJsonString(payloadOption)
 
-			if secondPayloadErr != nil {
-				printlogger.Log("%s", secondPayloadErr.Error())
-				return
-			}
+					if payloadOptionParsingErr != nil {
+						printlogger.Log("%s", payloadOptionParsingErr.Error())
+						return
+					}
 
-			// TODO: add a template for non-buttons (links, images, attachments)
-			mq.Template(template.GenericTemplate{
-				Title: currentCampaign.Name,
-				Buttons: []template.Button{
-					template.Button{
+					button = template.Button{
 						Type:    template.ButtonTypePostback,
-						Payload: firstPayloadString,
-						Title:   campaignNode.UserActions[0].Label,
-					},
-					template.Button{
-						Type:    template.ButtonTypePostback,
-						Payload: secondPayloadString,
-						Title:   campaignNode.UserActions[1].Label,
-					},
-				},
-			})
+						Payload: payloadOptionString,
+						Title:   currUserAction.Label,
+					}
+				}
+
+				buttonsSlice = append(buttonsSlice, button)
+			}
+
+			// Generic Message Query template to be sent to the user
+			mq.Template(
+				template.GenericTemplate{
+					Title: currentCampaign.Name,
+					Buttons: buttonsSlice,
+				}
+			)
 
 			resp, err := chatbot.CbMessenger.SendMessage(mq)
 

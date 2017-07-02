@@ -12,8 +12,6 @@ import (
 	"github.com/ubyssey/chatbotfb/app/lib/chatbot"
 	"github.com/ubyssey/chatbotfb/app/models/campaign"
 	"github.com/ubyssey/chatbotfb/app/models/user"
-	"github.com/ubyssey/chatbotfb/app/server/payload"
-	"github.com/ubyssey/chatbotfb/app/utils/jsonparser"
 	"github.com/ubyssey/chatbotfb/app/utils/printlogger"
 	"github.com/ubyssey/chatbotfb/configuration"
 
@@ -50,7 +48,6 @@ func GetCampaignFromMgmtApi() {
 		campaignCollection.Insert(newCampaign)
 
 		u := user.User{}
-
 		// for every user, update their last message once a new campaign is sent over.
 		// TODO: find a way to use updateAll instead. Also refactor it later.
 		findUsers := userCollection.Find(bson.M{})
@@ -73,68 +70,33 @@ func GetCampaignFromMgmtApi() {
 			if profileErr != nil {
 				printlogger.Log(profileErr.Error())
 				return
-
 			}
-
-			// Assume for a new campaign, there is atleast a root node with two user actions
 
 			mq := messenger.MessageQuery{}
 			mq.RecipientID(u.UserID)
 
-			firstPayloadOption := payload.Payload{
-				CampaignId: newCampaign.UUID,
-				Event: &user.Event{
-					NodeType: newCampaign.Nodes[newCampaign.RootNode].UserActions[0].NodeType,
-					Target:   newCampaign.Nodes[newCampaign.RootNode].UserActions[0].Target,
-					Label:    newCampaign.Nodes[newCampaign.RootNode].UserActions[0].Label,
+			buttonsOptions, buttonOptionsErr := chatbot.GetButtonTemplateOptions(
+				newCampaign.UUID,
+				newCampaign.Nodes[newCampaign.RootNode].UserActions,
+			)
+
+			if buttonOptionsErr != nil {
+				printlogger.Log(buttonOptionsErr.Error())
+				return
+			}
+
+			mq.Template(
+				template.GenericTemplate{
+					Title:   newCampaign.Name,
+					Buttons: buttonsOptions,
 				},
+			)
+
+			resp, msgErr := chatbot.CbMessenger.SendMessage(mq)
+			if msgErr != nil {
+				printlogger.Log(msgErr.Error())
 			}
-
-			secondPayloadOption := payload.Payload{
-				CampaignId: newCampaign.UUID,
-				Event: &user.Event{
-					NodeType: newCampaign.Nodes[newCampaign.RootNode].UserActions[1].NodeType,
-					Target:   newCampaign.Nodes[newCampaign.RootNode].UserActions[1].Target,
-					Label:    newCampaign.Nodes[newCampaign.RootNode].UserActions[1].Label,
-				},
-			}
-
-			// TODO: handle errors
-			firstPayloadString, firstPayloadErr := jsonparser.ToJsonString(firstPayloadOption)
-			secondPayloadString, secondPayloadErr := jsonparser.ToJsonString(secondPayloadOption)
-
-			// TODO: handle errors
-			if firstPayloadErr != nil {
-
-			}
-
-			if secondPayloadErr != nil {
-
-			}
-
-			mq.Template(template.GenericTemplate{
-				Title: newCampaign.Name,
-				Buttons: []template.Button{
-					template.Button{
-						Type:    template.ButtonTypePostback,
-						Payload: firstPayloadString,
-						Title:   newCampaign.Nodes[newCampaign.RootNode].UserActions[0].Label,
-					},
-					template.Button{
-						Type:    template.ButtonTypePostback,
-						Payload: secondPayloadString,
-						Title:   newCampaign.Nodes[newCampaign.RootNode].UserActions[1].Label,
-					},
-				},
-			})
-
-			resp, err := chatbot.CbMessenger.SendMessage(mq)
-
-			if err != nil {
-				fmt.Println(err)
-			}
-
-			fmt.Printf("%+v", resp)
+			printlogger.Log("%+v", resp)
 		}
 	}
 }

@@ -1,5 +1,10 @@
 package campaign
 
+import (
+	"gopkg.in/mgo.v2"
+	// "gopkg.in/mgo.v2/bson"
+)
+
 type Content struct {
 	Text string `json:"text" bson:"text"`
 }
@@ -24,4 +29,10 @@ type Campaign struct {
 	Name        string                  `json:"name" bson:"name"`
 	RootNode    string                  `json:"root_node" bson:"rootNode"`
 	Nodes       map[string]CampaignNode `json:"nodes" bson:"nodes"`
+}
+
+func GetCampaignStruct(campaignCollection *mgo.Collection, campaignId string) (Campaign, error) {
+	currentCampaign := Campaign{}
+	currentCampaignQuery := campaignCollection.FindId(campaignId).One(&currentCampaign)
+	return currentCampaign, currentCampaignQuery
 }

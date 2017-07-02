@@ -9,8 +9,6 @@ import (
 	"github.com/ubyssey/chatbotfb/app/lib/chatbot"
 	"github.com/ubyssey/chatbotfb/app/models/campaign"
 	"github.com/ubyssey/chatbotfb/app/models/user"
-	"github.com/ubyssey/chatbotfb/app/server/payload"
-	"github.com/ubyssey/chatbotfb/app/utils/jsonparser"
 	"github.com/ubyssey/chatbotfb/app/utils/printlogger"
 	"github.com/ubyssey/chatbotfb/configuration"
 
@@ -91,82 +89,45 @@ func handleReplyMessage(opts messenger.MessageOpts, msg messenger.ReceivedMessag
 			return
 		}
 
-		// Assume every starting campaign node has two user actions
-		firstPayloadOption := payload.Payload{
-			CampaignId: startCampaign.UUID,
-			Event: &user.Event{
-				NodeType: startCampaign.Nodes[startCampaign.RootNode].UserActions[0].NodeType,
-				Target:   startCampaign.Nodes[startCampaign.RootNode].UserActions[0].Target,
-				Label:    startCampaign.Nodes[startCampaign.RootNode].UserActions[0].Label,
-			},
-		}
+		// Get the button templates to be shown to the user
+		buttonsOptions, buttonOptionsErr := chatbot.GetButtonTemplateOptions(
+			startCampaign.UUID,
+			startCampaign.Nodes[startCampaign.RootNode].UserActions,
+		)
 
-		secondPayloadOption := payload.Payload{
-			CampaignId: startCampaign.UUID,
-			Event: &user.Event{
-				NodeType: startCampaign.Nodes[startCampaign.RootNode].UserActions[1].NodeType,
-				Target:   startCampaign.Nodes[startCampaign.RootNode].UserActions[1].Target,
-				Label:    startCampaign.Nodes[startCampaign.RootNode].UserActions[1].Label,
-			},
-		}
-
-		firstPayloadString, firstPayloadErr := jsonparser.ToJsonString(firstPayloadOption)
-		secondPayloadString, secondPayloadErr := jsonparser.ToJsonString(secondPayloadOption)
-
-		// TODO: handle errors
-		if firstPayloadErr != nil {
-			printlogger.Log("%s", firstPayloadErr.Error())
+		if buttonOptionsErr != nil {
+			printlogger.Log(buttonOptionsErr.Error())
 			return
 		}
-
-		if secondPayloadErr != nil {
-			printlogger.Log("%s", secondPayloadErr.Error())
-			return
-		}
-
-		printlogger.Log("%s", firstPayloadString)
-		printlogger.Log("%s", secondPayloadString)
 
 		// Initialize a message query
 		mq := messenger.MessageQuery{}
 		mq.RecipientID(senderID)
 
-		mq.Template(template.GenericTemplate{
-			Title: startCampaign.Name,
-			Buttons: []template.Button{
-				template.Button{
-					Type:    template.ButtonTypePostback,
-					Payload: firstPayloadString,
-					Title:   startCampaign.Nodes[startCampaign.RootNode].UserActions[0].Label,
-				},
-				template.Button{
-					Type:    template.ButtonTypePostback,
-					Payload: secondPayloadString,
-					Title:   startCampaign.Nodes[startCampaign.RootNode].UserActions[1].Label,
-				},
+		mq.Template(
+			template.GenericTemplate{
+				Title:   startCampaign.Name,
+				Buttons: buttonsOptions,
 			},
-		})
+		)
 
-		resp, err := chatbot.CbMessenger.SendMessage(mq)
-
-		if err != nil {
-			fmt.Println(err)
+		resp, msgErr := chatbot.CbMessenger.SendMessage(mq)
+		if msgErr != nil {
+			printlogger.Log(msgErr.Error())
 		}
-
-		fmt.Printf("%+v", resp)
+		printlogger.Log("%+v", resp)
 	} else if len(msg.Text) > 0 {
 		// chatbot only understands the message "start", any other message that is not a button or "start"
 		// is invalid
-		resp, err := chatbot.CbMessenger.SendSimpleMessage(
+		resp, msgErr := chatbot.CbMessenger.SendSimpleMessage(
 			opts.Sender.ID,
 			fmt.Sprintf("Sorry, I don't understand your message."),
 		)
 
-		if err != nil {
-			fmt.Println(err)
+		if msgErr != nil {
+			printlogger.Log(msgErr.Error())
 		}
-
-		fmt.Printf("%+v", resp)
+		printlogger.Log("%+v", resp)
 	}
 }
 
@@ -178,7 +139,7 @@ func MessageReceived(event messenger.Event, opts messenger.MessageOpts, msg mess
 	_, profileErr := chatbot.CbMessenger.GetProfile(opts.Sender.ID)
 	// if the sender profile is invalid, print out error and return
 	if profileErr != nil {
-		fmt.Println(profileErr)
+		printlogger.Log(profileErr.Error())
 		return
 	}
 

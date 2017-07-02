@@ -6,9 +6,7 @@ import (
 	"github.com/ubyssey/chatbotfb/app/database"
 	"github.com/ubyssey/chatbotfb/app/lib/chatbot"
 	"github.com/ubyssey/chatbotfb/app/models/campaign"
-	"github.com/ubyssey/chatbotfb/app/models/user"
 	"github.com/ubyssey/chatbotfb/app/server/payload"
-	"github.com/ubyssey/chatbotfb/app/utils/jsonparser"
 	"github.com/ubyssey/chatbotfb/app/utils/printlogger"
 	"github.com/ubyssey/chatbotfb/configuration"
 
@@ -22,29 +20,22 @@ func Postback(event messenger.Event, opts messenger.MessageOpts, pb messenger.Po
 	if profileErr != nil {
 		printlogger.Log(profileErr.Error())
 		return
-
 	}
 
-	// Get the database name from the config
-	dbName := configuration.Config.Database.MongoDB.Name
-	// MongoDB campaign collection
-	campaignCollection := database.MongoSession.DB(dbName).C("campaigns")
-
-	printlogger.Log("Received payload '%s' from user %s", pb.Payload, opts.Sender.ID)
-
-	payloadStruct := payload.Payload{}
-	err := jsonparser.Parse([]byte(pb.Payload), &payloadStruct)
-
-	if err != nil {
-		printlogger.Log(err.Error())
+	// Get the payload from the postback message
+	payloadStruct, payloadStructErr := payload.GetPayloadStruct(pb)
+	if payloadStructErr != nil {
+		printlogger.Log(payloadStructErr.Error())
 		printlogger.Log("Error parsing the payload '%s' for user profile: %s", pb.Payload, opts.Sender.ID)
 		return
 	}
 
-	currentCampaign := campaign.Campaign{}
-	currentCampaignQuery := campaignCollection.FindId(payloadStruct.CampaignId).One(&currentCampaign)
-
-	if currentCampaignQuery != nil {
+	// Get the campaign from the postback's 'campaignId' field
+	dbName := configuration.Config.Database.MongoDB.Name
+	campaignCollection := database.MongoSession.DB(dbName).C("campaigns")
+	currentCampaign, currentCampaignErr := campaign.GetCampaignStruct(campaignCollection, payloadStruct.CampaignId)
+	if currentCampaignErr != nil {
+		printlogger.Log(currentCampaignErr.Error())
 		printlogger.Log("Error finding the campaign :%s", payloadStruct.CampaignId)
 		return
 	}
@@ -56,77 +47,42 @@ func Postback(event messenger.Event, opts messenger.MessageOpts, pb messenger.Po
 			mq := messenger.MessageQuery{}
 			mq.RecipientID(opts.Sender.ID)
 
-			// A button slice to hold each button option to be shown to the user
-			buttonsSlice := []template.Button{}
-			var button template.Button
+			buttonsOptions, buttonOptionsErr := chatbot.GetButtonTemplateOptions(
+				payloadStruct.CampaignId,
+				campaignNode.UserActions,
+			)
 
-			for _, currUserAction := range campaignNode.UserActions {
-				// Reset the button struct every loop
-				button = template.Button{}
-
-				// If the node type is a "link", create a NewWebURLButton template. Otherwise,
-				// if it is a "node", then create a postback Button template with its payload
-				if currUserAction.NodeType == "link" {
-					button = template.NewWebURLButton(
-						currUserAction.Label,
-						currUserAction.Target
-					)
-				} else if currUserAction.NodeType == "node" {
-					payloadOption := payload.Payload{
-						CampaignId: payloadStruct.CampaignId,
-						Event: &user.Event{
-							NodeType: currUserAction.NodeType,
-							Target:   currUserAction.Target,
-							Label:    currUserAction.Label,
-						},
-					}
-
-					payloadOptionString, payloadOptionParsingErr := jsonparser.ToJsonString(payloadOption)
-
-					if payloadOptionParsingErr != nil {
-						printlogger.Log("%s", payloadOptionParsingErr.Error())
-						return
-					}
-
-					button = template.Button{
-						Type:    template.ButtonTypePostback,
-						Payload: payloadOptionString,
-						Title:   currUserAction.Label,
-					}
-				}
-
-				// If the button struct is not empty, append it to the buttonSlice
-				if button.ButtonType != "" && button.Title != "" {
-					buttonsSlice = append(buttonsSlice, button)
-				}
+			if buttonOptionsErr != nil {
+				printlogger.Log(buttonOptionsErr.Error())
+				return
 			}
 
 			// Generic Message Query template to be sent to the user
 			mq.Template(
 				template.GenericTemplate{
-					Title: currentCampaign.Name,
-					Buttons: buttonsSlice,
-				}
+					Title:   currentCampaign.Name,
+					Buttons: buttonsOptions,
+				},
 			)
 
-			resp, err := chatbot.CbMessenger.SendMessage(mq)
+			resp, msgErr := chatbot.CbMessenger.SendMessage(mq)
 
-			if err != nil {
-				fmt.Println(err)
+			if msgErr != nil {
+				printlogger.Log(msgErr.Error())
 			}
 
-			fmt.Printf("%+v", resp)
+			printlogger.Log("%+v", resp)
 		} else {
-			resp, err := chatbot.CbMessenger.SendSimpleMessage(
+			resp, msgErr := chatbot.CbMessenger.SendSimpleMessage(
 				opts.Sender.ID,
 				fmt.Sprintf(campaignNode.Content.Text),
 			)
 
-			if err != nil {
-				fmt.Println(err)
+			if msgErr != nil {
+				printlogger.Log(msgErr.Error())
 			}
 
-			fmt.Printf("%+v", resp)
+			printlogger.Log("%+v", resp)
 		}
 	} else {
 		printlogger.Log("Campaign Node target %s not found for user %s", payloadStruct.Event.Target, opts.Sender.ID)

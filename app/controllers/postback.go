@@ -14,8 +14,14 @@ import (
 	"gopkg.in/maciekmm/messenger-platform-go-sdk.v4"
 )
 
+var (
+	senderID string
+)
+
+// Sends back a reply when a user clicks a 'postback' button
 func Postback(event messenger.Event, opts messenger.MessageOpts, pb messenger.Postback) {
-	_, profileErr := chatbot.CbMessenger.GetProfile(opts.Sender.ID)
+	senderID = opts.Sender.ID
+	_, profileErr := chatbot.CbMessenger.GetProfile(senderID)
 	// if the sender profile is invalid, print out error and return
 	if profileErr != nil {
 		printlogger.Log(profileErr.Error())
@@ -26,7 +32,7 @@ func Postback(event messenger.Event, opts messenger.MessageOpts, pb messenger.Po
 	payloadStruct, payloadStructErr := payload.GetPayloadStruct(pb)
 	if payloadStructErr != nil {
 		printlogger.Log(payloadStructErr.Error())
-		printlogger.Log("Error parsing the payload '%s' for user profile: %s", pb.Payload, opts.Sender.ID)
+		printlogger.Log("Error parsing the payload '%s' for user profile: %s", pb.Payload, senderID)
 		return
 	}
 
@@ -40,12 +46,17 @@ func Postback(event messenger.Event, opts messenger.MessageOpts, pb messenger.Po
 		return
 	}
 
+	sendNextNodeActions(currentCampaign, payloadStruct)
+}
+
+// Send the user actions for the next node
+func sendNextNodeActions(currentCampaign campaign.Campaign, payloadStruct payload.Payload) {
 	if campaignNode, ok := currentCampaign.Nodes[payloadStruct.Event.Target]; ok {
 		// If a node still has children, send a message with those children node options,
 		// otherwise send the final message of the current campaign
 		if len(campaignNode.UserActions) > 0 {
 			mq := messenger.MessageQuery{}
-			mq.RecipientID(opts.Sender.ID)
+			mq.RecipientID(senderID)
 
 			buttonsOptions, buttonOptionsErr := chatbot.GetButtonTemplateOptions(
 				payloadStruct.CampaignId,
@@ -73,18 +84,9 @@ func Postback(event messenger.Event, opts messenger.MessageOpts, pb messenger.Po
 
 			printlogger.Log("%+v", resp)
 		} else {
-			resp, msgErr := chatbot.CbMessenger.SendSimpleMessage(
-				opts.Sender.ID,
-				fmt.Sprintf(campaignNode.Content.Text),
-			)
-
-			if msgErr != nil {
-				printlogger.Log(msgErr.Error())
-			}
-
-			printlogger.Log("%+v", resp)
+			chatbot.DefaultMessage(senderID)
 		}
 	} else {
-		printlogger.Log("Campaign Node target %s not found for user %s", payloadStruct.Event.Target, opts.Sender.ID)
+		printlogger.Log("Campaign Node target %s not found for user %s", payloadStruct.Event.Target, senderID)
 	}
 }

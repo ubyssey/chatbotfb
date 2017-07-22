@@ -71,20 +71,8 @@ func createOrUpdateUser(opts messenger.MessageOpts) {
 	}
 }
 
-func defaultMessage() {
-	resp, msgErr := chatbot.CbMessenger.SendSimpleMessage(
-		opts.Sender.ID,
-		fmt.Sprintf("Sorry, I don't understand your message."),
-	)
-
-	if msgErr != nil {
-		printlogger.Log(msgErr.Error())
-	}
-	printlogger.Log("%+v", resp)
-}
-
 // Sends a reply back to the user depending on their message content
-func handleReplyMessage(opts messenger.MessageOpts, msg messenger.ReceivedMessage) {
+func handleReplyMessage(msg messenger.ReceivedMessage) {
 	messageText := strings.ToLower(msg.Text)
 
 	switch {
@@ -93,7 +81,7 @@ func handleReplyMessage(opts messenger.MessageOpts, msg messenger.ReceivedMessag
 	case messageText == "start":
 		startCampaign()
 	default:
-		defaultMessage()
+		chatbot.DefaultMessage(senderID)
 	}
 }
 
@@ -120,7 +108,7 @@ func MessageReceived(event messenger.Event, opts messenger.MessageOpts, msg mess
 
 	initConfigVariables()
 	createOrUpdateUser(opts)
-	handleReplyMessage(opts, msg)
+	handleReplyMessage(msg)
 }
 
 func showMenu() {
@@ -133,12 +121,7 @@ func startCampaign() {
 	startCampaignMissingErr := campaignCollection.FindId(startCampaignId).One(&startCampaign)
 
 	if startCampaignMissingErr != nil {
-		startCampaignErrResponse, _ := chatbot.CbMessenger.SendSimpleMessage(
-			senderID,
-			fmt.Sprintf("A start campaign was not found."),
-		)
-
-		printlogger.Log("%+v", startCampaignErrResponse)
+		chatbot.DefaultMessage(senderID, "A start campaign was not found.")
 		return
 	}
 

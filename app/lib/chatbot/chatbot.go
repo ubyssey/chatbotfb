@@ -18,7 +18,26 @@ var (
 		AccessToken: os.Getenv("TOKEN"),
 		VerifyToken: os.Getenv("TOKEN"),
 	}
+	respText string
 )
+
+func DefaultMessage(recipient string, messages ...interface{}) {
+	if len(messages) > 0 {
+		respText = messages
+	} else {
+		respText = "Sorry, I don't understand your message."
+	}
+
+	resp, msgErr := CbMessenger.SendSimpleMessage(
+		recipient,
+		fmt.Sprintf(respText),
+	)
+
+	if msgErr != nil {
+		printlogger.Log(msgErr.Error())
+	}
+	printlogger.Log("%+v", resp)
+}
 
 func GetButtonTemplateOptions(campaignId string, userActions []campaign.UserAction) ([]template.Button, error) {
 	// A button slice to hold each button option to be shown to the user
@@ -31,16 +50,18 @@ func GetButtonTemplateOptions(campaignId string, userActions []campaign.UserActi
 
 		// If the node type is a "link", create a NewWebURLButton template. Otherwise,
 		// if it is a "node", then create a postback Button template with its payload
-		if currUserAction.NodeType == "link" {
+		actionNodeType := currUserAction.NodeType
+
+		if actionNodeType == "link" {
 			button = template.NewWebURLButton(
 				currUserAction.Label,
 				currUserAction.Target,
 			)
-		} else if currUserAction.NodeType == "node" {
+		} else if actionNodeType == "node" {
 			payloadOption := payload.Payload{
 				CampaignId: campaignId,
 				Event: &user.Event{
-					NodeType: currUserAction.NodeType,
+					NodeType: actionNodeType,
 					Target:   currUserAction.Target,
 					Label:    currUserAction.Label,
 				},

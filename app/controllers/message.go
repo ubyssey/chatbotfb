@@ -27,59 +27,15 @@ var (
 	startCampaignId     = "6z479nb9-3x2f-23gs-g2dz-abc10625xc68"
 )
 
-// Creates a user record in MongoDB if non-existing user, otherwise
-// update the user record
-func createOrUpdateUser(opts messenger.MessageOpts) {
-	// Check whether a user exists or not. If they are a first time user, create a record in database
-	// otherwise update the record of that user
-	// TODO: figure out when lastMessage is updated since there are two user actions
-	if userCollectionError == nil {
-		// existing user (user is found)
-		set := bson.M{
-			"lastSeen": time.Unix(opts.Timestamp, 0),
-			"lastMessage": &user.LastMessage{
-				time.Now(),
-				user.Event{
-					"node",
-					"4722d250-6162-4f02-a358-a4d55e3c8e20",
-					"Nicasdfasdfasdfasde to meet you!",
-				},
-			},
-		}
-
-		userCollection.UpdateId(senderID, bson.M{"$set": set})
-
-		printlogger.Log("Updated User %s", senderID)
-	} else {
-		// create new user
-		userCollection.Insert(
-			&user.User{
-				senderID,
-				time.Unix(opts.Timestamp, 0),
-				user.LastMessage{
-					time.Now(),
-					user.Event{
-						"node",
-						"4722d250-6162-4f02-a358-a4d55e3c8e20",
-						"Nice to meet you!",
-					},
-				},
-			},
-		)
-
-		printlogger.Log("Created User %s", senderID)
-	}
-}
-
 // Sends a reply back to the user depending on their message content
 func handleReplyMessage(msg messenger.ReceivedMessage) {
 	messageText := strings.ToLower(msg.Text)
 
 	switch {
 	case messageText == "menu":
-		showMenu()
+		messageoptions.ShowMenu()
 	case messageText == "start":
-		startCampaign()
+		messageoptions.StartCampaign()
 	default:
 		chatbot.DefaultMessage(senderID)
 	}
@@ -107,49 +63,6 @@ func MessageReceived(event messenger.Event, opts messenger.MessageOpts, msg mess
 	}
 
 	initConfigVariables()
-	createOrUpdateUser(opts)
+	user.createOrUpdateUser(opts)
 	handleReplyMessage(msg)
-}
-
-func showMenu() {
-
-}
-
-// Start a new campaign for the user
-func startCampaign() {
-	startCampaign := campaign.Campaign{}
-	startCampaignMissingErr := campaignCollection.FindId(startCampaignId).One(&startCampaign)
-
-	if startCampaignMissingErr != nil {
-		chatbot.DefaultMessage(senderID, "A start campaign was not found.")
-		return
-	}
-
-	// Get the button templates to be shown to the user
-	buttonsOptions, buttonOptionsErr := chatbot.GetButtonTemplateOptions(
-		startCampaign.UUID,
-		startCampaign.Nodes[startCampaign.RootNode].UserActions,
-	)
-
-	if buttonOptionsErr != nil {
-		printlogger.Log(buttonOptionsErr.Error())
-		return
-	}
-
-	// Initialize a message query
-	mq := messenger.MessageQuery{}
-	mq.RecipientID(senderID)
-
-	mq.Template(
-		template.GenericTemplate{
-			Title:   startCampaign.Name,
-			Buttons: buttonsOptions,
-		},
-	)
-
-	resp, msgErr := chatbot.CbMessenger.SendMessage(mq)
-	if msgErr != nil {
-		printlogger.Log(msgErr.Error())
-	}
-	printlogger.Log("%+v", resp)
 }

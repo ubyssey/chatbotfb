@@ -41,7 +41,7 @@ func DefaultMessage(recipient string, messages ...interface{}) {
 
 func GetButtonTemplateOptions(campaignId string, userActions []campaign.UserAction) ([]template.Button, error) {
 	// A button slice to hold each button option to be shown to the user
-	buttonsSlice := []template.Button{}
+	buttonSlice := []template.Button{}
 	var button template.Button
 
 	for _, currUserAction := range userActions {
@@ -82,8 +82,8 @@ func GetButtonTemplateOptions(campaignId string, userActions []campaign.UserActi
 
 		// If the button struct is not empty, append it to the buttonSlice
 		if button.Type != "" && button.Title != "" {
-			buttonsSlice = append(buttonsSlice, button)
+			buttonSlice = append(buttonSlice, button)
 		}
 	}
-	return buttonsSlice, nil
+	return buttonSlice, nil
 }

@@ -1,16 +1,11 @@
 package controllers
 
 import (
-	"fmt"
-
-	"github.com/ubyssey/chatbotfb/app/database"
 	"github.com/ubyssey/chatbotfb/app/lib/chatbot"
-	"github.com/ubyssey/chatbotfb/app/models/campaign"
+	"github.com/ubyssey/chatbotfb/app/messageactions"
 	"github.com/ubyssey/chatbotfb/app/server/payload"
 	"github.com/ubyssey/chatbotfb/app/utils/printlogger"
-	"github.com/ubyssey/chatbotfb/configuration"
 
-	"github.com/maciekmm/messenger-platform-go-sdk/template"
 	"gopkg.in/maciekmm/messenger-platform-go-sdk.v4"
 )
 

@@ -8,10 +8,7 @@ import (
 	"github.com/ubyssey/chatbotfb/app/models/user"
 	"github.com/ubyssey/chatbotfb/app/utils/printlogger"
 
-	"github.com/maciekmm/messenger-platform-go-sdk/template"
 	"gopkg.in/maciekmm/messenger-platform-go-sdk.v4"
-	"gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
 )
 
 // Sends a reply back to the user depending on their message content
@@ -20,7 +17,7 @@ func handleReplyMessage(opts messenger.MessageOpts, msg messenger.ReceivedMessag
 
 	switch {
 	case messageText == "menu":
-		messageactions.ShowMenu()
+		messageactions.ShowMenu(opts.Sender.ID)
 	case messageText == "start":
 		messageactions.StartCampaign(opts.Sender.ID)
 	default:
@@ -31,7 +28,7 @@ func handleReplyMessage(opts messenger.MessageOpts, msg messenger.ReceivedMessag
 // Handles the POST message request from facebook
 func MessageReceived(event messenger.Event, opts messenger.MessageOpts, msg messenger.ReceivedMessage) {
 	// fetches the sender profile from facebook's Graph API
-	_, profileErr := chatbot.CbMessenger.GetProfile(senderID)
+	_, profileErr := chatbot.CbMessenger.GetProfile(opts.Sender.ID)
 	// if the sender profile is invalid, print out error and return
 	if profileErr != nil {
 		printlogger.Log(profileErr.Error())
@@ -40,6 +37,6 @@ func MessageReceived(event messenger.Event, opts messenger.MessageOpts, msg mess
 
 	printlogger.Log("Received message from %s", opts.Sender.ID)
 
-	user.createOrUpdateUser(opts)
+	user.CreateOrUpdateUser(opts)
 	handleReplyMessage(opts, msg)
 }

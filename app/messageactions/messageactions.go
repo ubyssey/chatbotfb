@@ -106,11 +106,11 @@ func ShowMenuListTemplate(senderID string, payloadStruct payload.Payload) {
 
 	listElementSlice := []template.ListElement{}
 
-	for _, article := range articles {
+	for _, article := range articles.Results {
 		listElement := template.ListElement{
 			Title:    article.Headline,
 			ImageURL: article.FeaturedImage.Url,
-			Subtitle: Article.Snippet,
+			Subtitle: article.Snippet,
 			DefaultAction: template.DefaultAction{
 				Type:                "web_url",
 				URL:                 article.Url,
@@ -180,7 +180,7 @@ func StartCampaign(senderID string) {
 }
 
 // Get the button options for the menu
-func getMenuButtonOptions() ([]template.Buttons, error) {
+func getMenuButtonOptions() ([]template.Button, error) {
 	// A button slice to hold each button option to be shown to the user
 	buttonSlice := []template.Button{}
 
@@ -212,5 +212,5 @@ func getMenuButtonOptions() ([]template.Buttons, error) {
 		buttonSlice = append(buttonSlice, button)
 	}
 
-	return buttonSlice
+	return buttonSlice, nil
 }

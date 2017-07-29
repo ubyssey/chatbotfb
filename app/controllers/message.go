@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/ubyssey/chatbotfb/app/lib/chatbot"
-	"github.com/ubyssey/chatbotfb/app/messageactions/messageactions"
+	"github.com/ubyssey/chatbotfb/app/messageactions"
 	"github.com/ubyssey/chatbotfb/app/models/user"
 	"github.com/ubyssey/chatbotfb/app/utils/printlogger"
 
@@ -22,9 +22,9 @@ func handleReplyMessage(opts messenger.MessageOpts, msg messenger.ReceivedMessag
 	case messageText == "menu":
 		messageactions.ShowMenu()
 	case messageText == "start":
-		messageactions.StartCampaign()
+		messageactions.StartCampaign(opts.Sender.ID)
 	default:
-		chatbot.DefaultMessage(opts.Sender.ID)
+		chatbot.DefaultMessage(opts.Sender.ID, "")
 	}
 }
 

@@ -1,8 +1,17 @@
 package messageactions
 
 import (
+	"github.com/ubyssey/chatbotfb/app/database"
+	"github.com/ubyssey/chatbotfb/app/external/ubysseydotca"
 	"github.com/ubyssey/chatbotfb/app/lib/chatbot"
 	"github.com/ubyssey/chatbotfb/app/models/campaign"
+	"github.com/ubyssey/chatbotfb/app/server/payload"
+	"github.com/ubyssey/chatbotfb/app/utils/jsonparser"
+	"github.com/ubyssey/chatbotfb/app/utils/printlogger"
+	"github.com/ubyssey/chatbotfb/configuration"
+
+	"github.com/maciekmm/messenger-platform-go-sdk/template"
+	"gopkg.in/maciekmm/messenger-platform-go-sdk.v4"
 )
 
 var (
@@ -10,7 +19,7 @@ var (
 )
 
 // Send the user actions for the next campaign node
-func SendNextCampaignNodeActions(senderID string payloadStruct payload.Payload) {
+func SendNextCampaignNodeActions(senderID string, payloadStruct payload.Payload) {
 	dbName := configuration.Config.Database.MongoDB.Name
 	campaignCollection := database.MongoSession.DB(dbName).C("campaigns")
 	currentCampaign, currentCampaignErr := campaign.GetCampaignStruct(campaignCollection, payloadStruct.CampaignId)
@@ -53,7 +62,7 @@ func SendNextCampaignNodeActions(senderID string payloadStruct payload.Payload) 
 
 			printlogger.Log("%+v", resp)
 		} else {
-			chatbot.DefaultMessage(senderID)
+			chatbot.DefaultMessage(senderID, "")
 		}
 	} else {
 		printlogger.Log("Campaign Node target %s not found for user %s", payloadStruct.Event.Target, senderID)
@@ -99,15 +108,15 @@ func ShowMenuListTemplate(senderID string, payloadStruct payload.Payload) {
 
 	for _, article := range articles {
 		listElement := template.ListElement{
-			Title: article.Headline,
-			ImageURL: article.FeaturedImage.Url
+			Title:    article.Headline,
+			ImageURL: article.FeaturedImage.Url,
 			Subtitle: Article.Snippet,
 			DefaultAction: template.DefaultAction{
-				Type: "web_url",
-				URL: article.Url,
+				Type:                "web_url",
+				URL:                 article.Url,
 				MessengerExtensions: true,
-				WebviewHeightRatio: "tall",
-			}
+				WebviewHeightRatio:  "tall",
+			},
 		}
 		listElementSlice = append(listElementSlice, listElement)
 	}
@@ -116,7 +125,7 @@ func ShowMenuListTemplate(senderID string, payloadStruct payload.Payload) {
 	mq.RecipientID(senderID)
 
 	mq.Template(
-		template.ListTemplate {
+		template.ListTemplate{
 			Elements: listElementSlice,
 		},
 	)
@@ -129,7 +138,7 @@ func ShowMenuListTemplate(senderID string, payloadStruct payload.Payload) {
 }
 
 // Start a new campaign for the user
-func StartCampaign() {
+func StartCampaign(senderID string) {
 	dbName := configuration.Config.Database.MongoDB.Name
 	campaignCollection := database.MongoSession.DB(dbName).C("campaigns")
 

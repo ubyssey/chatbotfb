@@ -2,6 +2,13 @@ package user
 
 import (
 	"time"
+
+	"github.com/ubyssey/chatbotfb/app/database"
+	"github.com/ubyssey/chatbotfb/app/utils/printlogger"
+	"github.com/ubyssey/chatbotfb/configuration"
+
+	"gopkg.in/maciekmm/messenger-platform-go-sdk.v4"
+	"gopkg.in/mgo.v2/bson"
 )
 
 type User struct {
@@ -25,9 +32,10 @@ type Event struct {
 // update the user record
 func CreateOrUpdateUser(opts messenger.MessageOpts) {
 	senderID := opts.Sender.ID
+	dbName := configuration.Config.Database.MongoDB.Name
 	userCollection := database.MongoSession.DB(dbName).C("users")
 	// Check to see if the sender exists in the user collection
-	userCollectionError = userCollection.FindId(senderID)
+	userCollectionError := userCollection.FindId(senderID)
 
 	// If the user is a first time user, create a record in database.
 	// Otherwise update the record of that user.
@@ -36,9 +44,9 @@ func CreateOrUpdateUser(opts messenger.MessageOpts) {
 		// existing user (user is found)
 		set := bson.M{
 			"lastSeen": time.Unix(opts.Timestamp, 0),
-			"lastMessage": &user.LastMessage{
+			"lastMessage": &LastMessage{
 				time.Now(),
-				user.Event{
+				Event{
 					"node",
 					"4722d250-6162-4f02-a358-a4d55e3c8e20",
 					"Nicasdfasdfasdfasde to meet you!",
@@ -52,12 +60,12 @@ func CreateOrUpdateUser(opts messenger.MessageOpts) {
 	} else {
 		// create new user
 		userCollection.Insert(
-			&user.User{
+			&User{
 				senderID,
 				time.Unix(opts.Timestamp, 0),
-				user.LastMessage{
+				LastMessage{
 					time.Now(),
-					user.Event{
+					Event{
 						"node",
 						"4722d250-6162-4f02-a358-a4d55e3c8e20",
 						"Nice to meet you!",

@@ -1,12 +1,14 @@
 package chatbot
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/ubyssey/chatbotfb/app/models/campaign"
 	"github.com/ubyssey/chatbotfb/app/models/user"
 	"github.com/ubyssey/chatbotfb/app/server/payload"
 	"github.com/ubyssey/chatbotfb/app/utils/jsonparser"
+	"github.com/ubyssey/chatbotfb/app/utils/printlogger"
 
 	"github.com/maciekmm/messenger-platform-go-sdk/template"
 	"gopkg.in/maciekmm/messenger-platform-go-sdk.v4"
@@ -18,23 +20,25 @@ var (
 		AccessToken: os.Getenv("TOKEN"),
 		VerifyToken: os.Getenv("TOKEN"),
 	}
-	respText string
 )
 
-func DefaultMessage(recipient string, messages ...interface{}) {
-	if len(messages) > 0 {
-		respText = messages
-	} else {
-		respText = "Sorry, I don't understand your message."
+// Send a default message to the recipient
+func DefaultMessage(recipient string, msg string) {
+	// Default message
+	respText := "Sorry, I don't understand your message."
+
+	// If a message is specified, replace the default message with the specified one
+	if len(msg) > 0 {
+		respText = msg
 	}
 
-	resp, msgErr := CbMessenger.SendSimpleMessage(
+	resp, respErr := CbMessenger.SendSimpleMessage(
 		recipient,
 		fmt.Sprintf(respText),
 	)
 
-	if msgErr != nil {
-		printlogger.Log(msgErr.Error())
+	if respErr != nil {
+		printlogger.Log(respErr.Error())
 	}
 	printlogger.Log("%+v", resp)
 }

@@ -8,7 +8,6 @@ import (
 )
 
 type Payload struct {
-	IsUrlLink  bool        `json:"is_url_link,omitempty"`
 	UrlLink    string      `json:"url_link,omitempty"`
 	CampaignId string      `json:"campaign_id,omitempty"`
 	Event      *user.Event `json:"event,omitempty"`

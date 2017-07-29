@@ -24,8 +24,13 @@ type Event struct {
 // Creates a user record in MongoDB if non-existing user, otherwise
 // update the user record
 func CreateOrUpdateUser(opts messenger.MessageOpts) {
-	// Check whether a user exists or not. If they are a first time user, create a record in database
-	// otherwise update the record of that user
+	senderID := opts.Sender.ID
+	userCollection := database.MongoSession.DB(dbName).C("users")
+	// Check to see if the sender exists in the user collection
+	userCollectionError = userCollection.FindId(senderID)
+
+	// If the user is a first time user, create a record in database.
+	// Otherwise update the record of that user.
 	// TODO: figure out when lastMessage is updated since there are two user actions
 	if userCollectionError == nil {
 		// existing user (user is found)

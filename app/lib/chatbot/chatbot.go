@@ -39,7 +39,7 @@ func DefaultMessage(recipient string, messages ...interface{}) {
 	printlogger.Log("%+v", resp)
 }
 
-func GetButtonTemplateOptions(campaignId string, userActions []campaign.UserAction) ([]template.Button, error) {
+func GetCampaignButtonTemplateOptions(campaignId string, userActions []campaign.UserAction) ([]template.Button, error) {
 	// A button slice to hold each button option to be shown to the user
 	buttonSlice := []template.Button{}
 	var button template.Button

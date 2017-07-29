@@ -75,7 +75,7 @@ func GetCampaignFromMgmtApi() {
 			mq := messenger.MessageQuery{}
 			mq.RecipientID(u.UserID)
 
-			buttonsOptions, buttonOptionsErr := chatbot.GetButtonTemplateOptions(
+			buttonsOptions, buttonOptionsErr := chatbot.GetCampaignButtonTemplateOptions(
 				newCampaign.UUID,
 				newCampaign.Nodes[newCampaign.RootNode].UserActions,
 			)

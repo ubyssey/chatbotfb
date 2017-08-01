@@ -80,6 +80,9 @@ func ShowMenu(senderID string) {
 
 	mq := messenger.MessageQuery{}
 	mq.RecipientID(senderID)
+	// TODO: Generic Templates only supports 3 buttons but we need 4. We can use button templates but it's
+	// not working with the messenger Go SDK (known issue. See pull requests). Currently, one
+	// menu will be commented out until the button template issue is fixed.
 	mq.Template(
 		template.GenericTemplate{
 			Title:    "Menu",
@@ -189,7 +192,7 @@ func getMenuButtonOptions() ([]template.Button, error) {
 	menuOptionsMap["Top stories"] = "https://www.ubyssey.ca/api/articles/?limit=4"
 	menuOptionsMap["News"] = "https://www.ubyssey.ca/api/articles/?section=1&limit=4"
 	menuOptionsMap["Sports"] = "https://www.ubyssey.ca/api/articles/?section=2&limit=4"
-	menuOptionsMap["Culture "] = "https://www.ubyssey.ca/api/articles/?section=3&limit=4"
+	// menuOptionsMap["Culture "] = "https://www.ubyssey.ca/api/articles/?section=3&limit=4"
 
 	// For each menu option, create a button and add it to the button slice
 	for buttonTitle, buttonUrl := range menuOptionsMap {
